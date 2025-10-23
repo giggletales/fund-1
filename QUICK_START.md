@@ -1,5 +1,38 @@
 # Quick Start Guide - Monitoring System
 
+<<<<<<< HEAD
+=======
+## 🚨 IMPORTANT: Email Verification Fix
+
+If you're seeing 404 errors on the email verification page, you need to deploy the backend first!
+
+### Quick Fix - Deploy Backend to Render
+
+1. **Go to** https://render.com (sign up/login)
+2. **Create New Web Service** → Connect GitHub repo `giggletales/fund-1`
+3. **Configure**:
+   - Root Directory: `backend`
+   - Build: `npm install`
+   - Start: `npm start`
+4. **Add Environment Variables** (see backend/.env for values):
+   - `NODE_ENV=production`
+   - `FRONTEND_URL=https://fund8r.com`
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`
+   - `JWT_SECRET`
+5. **Deploy** and copy the URL (e.g., `https://fund-backend-pbde.onrender.com`)
+6. **Configure Frontend**:
+   - In Bolt/Vercel/Netlify settings
+   - Add: `VITE_API_URL=https://fund-backend-pbde.onrender.com/api`
+   - Redeploy
+
+**✅ DEPLOYED**: Backend is live at https://fund-backend-pbde.onrender.com
+
+See `backend/README.md` for detailed deployment instructions.
+
+---
+
+>>>>>>> email-verification
 ## What Was Built
 
 A complete backend monitoring system for your prop firm with:

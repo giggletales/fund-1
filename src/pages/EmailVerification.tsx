@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
+<<<<<<< HEAD
+=======
+// API URL configuration
+// In development: uses Vite proxy (/api -> http://localhost:5000)
+// In production: must set VITE_API_URL environment variable
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://fund-backend-pbde.onrender.com/api');
+
+>>>>>>> email-verification
 export default function EmailVerification() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,28 +91,73 @@ export default function EmailVerification() {
     setError('');
 
     try {
+<<<<<<< HEAD
       const response = await fetch('/api/verification/verify-code', {
+=======
+      console.log('Signup state:', { email, code: codeToVerify });
+      console.log('Sending verification to:', `${API_URL}/verification/verify-code`);
+      
+      const response = await fetch(`${API_URL}/verification/verify-code`, {
+>>>>>>> email-verification
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: codeToVerify })
       });
 
+<<<<<<< HEAD
       const data = await response.json();
+=======
+      console.log('State check:', { status: response.status, ok: response.ok });
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Error sending verification code:', 'Response is not JSON');
+        throw new Error('Server returned invalid response. Please try again.');
+      }
+
+      const data = await response.json();
+      console.log('Signup result:', data);
+>>>>>>> email-verification
 
       if (data.success) {
         setSuccess(true);
         localStorage.removeItem('verificationEmail');
         
+<<<<<<< HEAD
         setTimeout(() => {
           navigate('/pricing', { state: { emailVerified: true, email } });
+=======
+        // Check if there's a pending payment
+        const pendingPayment = localStorage.getItem('pendingPayment');
+        
+        setTimeout(() => {
+          if (pendingPayment) {
+            const paymentData = JSON.parse(pendingPayment);
+            localStorage.removeItem('pendingPayment');
+            
+            // Redirect to payment page with stored data
+            const paymentUrl = `/payment?accountSize=${paymentData.accountSize}&challengeType=${encodeURIComponent(paymentData.challengeType)}&originalPrice=${paymentData.originalPrice}${paymentData.isPayAsYouGo ? `&isPayAsYouGo=true&phase2Price=${paymentData.phase2Price}` : ''}`;
+            window.location.href = paymentUrl;
+          } else {
+            // No pending payment, go to dashboard
+            navigate('/dashboard', { state: { emailVerified: true, email } });
+          }
+>>>>>>> email-verification
         }, 2000);
       } else {
         setError(data.message || 'Invalid verification code');
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
+<<<<<<< HEAD
     } catch (err) {
       setError('Failed to verify code. Please try again.');
+=======
+    } catch (err: any) {
+      console.error('Error sending verification code:', err);
+      setError(err.message || 'Failed to verify code. Please try again.');
+>>>>>>> email-verification
     } finally {
       setLoading(false);
     }
@@ -117,12 +170,25 @@ export default function EmailVerification() {
     setError('');
 
     try {
+<<<<<<< HEAD
       const response = await fetch('/api/verification/resend-code', {
+=======
+      const response = await fetch(`${API_URL}/verification/resend-code`, {
+>>>>>>> email-verification
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
 
+<<<<<<< HEAD
+=======
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned invalid response. Please try again.');
+      }
+
+>>>>>>> email-verification
       const data = await response.json();
 
       if (data.success) {
@@ -134,8 +200,14 @@ export default function EmailVerification() {
       } else {
         setError(data.message || 'Failed to resend code');
       }
+<<<<<<< HEAD
     } catch (err) {
       setError('Failed to resend code. Please try again.');
+=======
+    } catch (err: any) {
+      console.error('Error resending code:', err);
+      setError(err.message || 'Failed to resend code. Please try again.');
+>>>>>>> email-verification
     } finally {
       setLoading(false);
     }

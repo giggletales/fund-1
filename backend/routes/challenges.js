@@ -221,4 +221,74 @@ router.get('/challenge/:challengeId/stats', async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
+=======
+// Coupon validation endpoint
+router.post('/coupons/validate', async (req, res) => {
+  try {
+    const { coupon_code, challenge_type } = req.body;
+
+    if (!coupon_code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Coupon code is required'
+      });
+    }
+
+    // Call Supabase RPC function
+    const { data, error } = await supabase.rpc('validate_coupon', {
+      coupon_code: coupon_code.toUpperCase(),
+      challenge_type: challenge_type || 'all'
+    });
+
+    if (error) {
+      console.error('Coupon validation error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: data
+    });
+  } catch (error) {
+    console.error('Error validating coupon:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Increment coupon usage
+router.post('/coupons/increment-usage', async (req, res) => {
+  try {
+    const { coupon_code } = req.body;
+
+    if (!coupon_code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Coupon code is required'
+      });
+    }
+
+    const { data, error } = await supabase.rpc('increment_coupon_usage', {
+      coupon_code: coupon_code.toUpperCase()
+    });
+
+    if (error) throw error;
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error incrementing coupon usage:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+>>>>>>> email-verification
 export default router;

@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+=======
+// API URL configuration
+// In development: uses Vite proxy (/api -> http://localhost:5000)
+// In production: must set VITE_API_URL environment variable
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://fund-backend-pbde.onrender.com/api');
+>>>>>>> email-verification
 
 export const api = {
   // Account Management

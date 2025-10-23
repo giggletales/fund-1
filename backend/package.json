@@ -7,7 +7,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+<<<<<<< HEAD
     "test": "node test-connection.js"
+=======
+    "test": "node test-connection.js",
+    "test:email": "node SendTestEmail.js"
+>>>>>>> email-verification
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

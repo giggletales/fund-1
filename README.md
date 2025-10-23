@@ -4,6 +4,16 @@
 
 A production-ready prop trading evaluation platform with automatic breach detection, built-in email system, user authentication, and complete dashboard functionality.
 
+<<<<<<< HEAD
+=======
+## ✅ Email Verification System - LIVE
+
+- **Backend**: https://fund-backend-pbde.onrender.com
+- **Status**: Fully operational
+- **Endpoints**: `/api/verification/*` working
+- **Documentation**: See `QUICK_START.md` for deployment details
+
+>>>>>>> email-verification
 ## ✨ Features Implemented
 
 ### Core Platform

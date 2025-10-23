@@ -22,7 +22,12 @@ import {
   Check,
   BarChart3,
   TrendingUp,
+<<<<<<< HEAD
   Activity
+=======
+  Activity,
+  Target
+>>>>>>> email-verification
 } from 'lucide-react';
 import GradientText from '../components/ui/GradientText';
 import { supabase } from '../lib/db';

@@ -8,6 +8,7 @@ dotenv.config();
 
 class EmailService {
   constructor() {
+<<<<<<< HEAD
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -17,6 +18,48 @@ class EmailService {
         pass: process.env.SMTP_PASS
       }
     });
+=======
+    // Initialize transporter as null, will be created on first use
+    this.transporter = null;
+    this.isConfigured = false;
+    this.initializeTransporter();
+  }
+
+  initializeTransporter() {
+    // Check if SMTP credentials are configured
+    const hasCredentials = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
+    
+    if (hasCredentials) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT) || 587,
+          secure: false,
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD
+          }
+        });
+        this.isConfigured = true;
+        console.log('✅ Email service configured with SMTP');
+        console.log(`   Host: ${process.env.SMTP_HOST}`);
+        console.log(`   User: ${process.env.SMTP_USER}`);
+      } catch (error) {
+        console.error('❌ Failed to initialize SMTP transporter:', error.message);
+        this.isConfigured = false;
+      }
+    } else {
+      console.warn('⚠️  Email service not configured - SMTP credentials missing');
+      console.warn('   Required: SMTP_HOST, SMTP_USER, SMTP_PASSWORD');
+      console.warn('   Emails will be logged to console instead of being sent');
+    }
+  }
+
+  // Method to reinitialize transporter (useful when env vars are loaded after import)
+  reinitialize() {
+    this.initializeTransporter();
+    return this.isConfigured;
+>>>>>>> email-verification
     
     // Ensure certificates directory exists
     this.certsDir = path.join(process.cwd(), 'public', 'certificates');
@@ -27,6 +70,19 @@ class EmailService {
 
   async sendEmail(to, subject, html) {
     try {
+<<<<<<< HEAD
+=======
+      if (!this.isConfigured || !this.transporter) {
+        console.log('\n' + '='.repeat(60));
+        console.log('📧 EMAIL SIMULATION (SMTP not configured)');
+        console.log('='.repeat(60));
+        console.log(`To: ${to}`);
+        console.log(`Subject: ${subject}`);
+        console.log('='.repeat(60) + '\n');
+        return; // Don't throw error, just log
+      }
+      
+>>>>>>> email-verification
       await this.transporter.sendMail({
         from: `"${process.env.COMPANY_NAME}" <${process.env.SMTP_USER}>`,
         to,
@@ -42,6 +98,25 @@ class EmailService {
 
   async sendVerificationEmail(email, code) {
     try {
+<<<<<<< HEAD
+=======
+      if (!this.isConfigured || !this.transporter) {
+        console.error('\n' + '='.repeat(60));
+        console.error('❌ SMTP NOT CONFIGURED - Cannot send verification email');
+        console.error('='.repeat(60));
+        console.error(`To: ${email}`);
+        console.error(`Verification Code: ${code}`);
+        console.error(`Expires: 10 minutes`);
+        console.error('\nRequired environment variables:');
+        console.error('  - SMTP_HOST');
+        console.error('  - SMTP_USER');
+        console.error('  - SMTP_PASSWORD');
+        console.error('='.repeat(60) + '\n');
+        // Throw error instead of silently failing
+        throw new Error('SMTP not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD environment variables.');
+      }
+      
+>>>>>>> email-verification
       const subject = `🔐 Verify Your Email - ${process.env.COMPANY_NAME || 'Fund8r'}`;
       const html = `
         <!DOCTYPE html>
@@ -215,6 +290,19 @@ class EmailService {
 
   async sendWelcomeEmail(user) {
     try {
+<<<<<<< HEAD
+=======
+      if (!this.isConfigured || !this.transporter) {
+        console.log('\n' + '='.repeat(60));
+        console.log('📧 WELCOME EMAIL SIMULATION (SMTP not configured)');
+        console.log('='.repeat(60));
+        console.log(`To: ${user.email}`);
+        console.log(`Name: ${user.full_name || user.email}`);
+        console.log('='.repeat(60) + '\n');
+        return; // Don't throw error, just log
+      }
+      
+>>>>>>> email-verification
       const subject = `🚀 Welcome to ${process.env.COMPANY_NAME || 'Fund8r'} - Your Trading Journey Begins!`;
     const html = `
       <!DOCTYPE html>

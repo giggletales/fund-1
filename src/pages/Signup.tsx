@@ -61,6 +61,7 @@ export default function Signup() {
     console.log('Signup result:', result);
 
     if (result.success) {
+<<<<<<< HEAD
       console.log('State check:', { returnTo, accountSize, challengeType, originalPrice });
 
       if (returnTo && accountSize && challengeType && originalPrice !== undefined) {
@@ -75,6 +76,33 @@ export default function Signup() {
         console.log('Missing state values:', { returnTo, accountSize, challengeType, originalPrice });
         window.location.href = '/dashboard';
       }
+=======
+      // Store payment data in localStorage if exists
+      if (accountSize && challengeType && originalPrice) {
+        localStorage.setItem('pendingPayment', JSON.stringify({
+          accountSize,
+          challengeType,
+          originalPrice,
+          isPayAsYouGo,
+          phase2Price
+        }));
+      }
+      
+      // Store email for verification page
+      localStorage.setItem('verificationEmail', formData.email);
+      
+      // Redirect to email verification page
+      navigate('/email-verification', { 
+        state: { 
+          email: formData.email,
+          accountSize,
+          challengeType,
+          originalPrice,
+          isPayAsYouGo,
+          phase2Price
+        } 
+      });
+>>>>>>> email-verification
     } else {
       setError(result.error || 'Registration failed');
       setLoading(false);

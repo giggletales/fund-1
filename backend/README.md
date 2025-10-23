@@ -145,6 +145,7 @@ The backend is built with:
 
 ## Production Deployment
 
+<<<<<<< HEAD
 1. Set `NODE_ENV=production` in environment
 2. Use a process manager like PM2
 3. Set up SSL/TLS certificates
@@ -152,6 +153,78 @@ The backend is built with:
 5. Enable all security headers
 6. Set up monitoring and logging
 7. Regular database backups
+=======
+### Quick Deploy to Render (Recommended)
+
+1. **Sign up** at https://render.com
+
+2. **Create New Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   - Configure:
+     - **Root Directory**: `backend`
+     - **Build Command**: `npm install`
+     - **Start Command**: `npm start`
+     - **Environment**: Node
+
+3. **Add Environment Variables**:
+   ```
+   NODE_ENV=production
+   PORT=5000
+   FRONTEND_URL=https://fund8r.com
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_SERVICE_KEY=your_service_key
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=fund8r.forex@gmail.com
+   SMTP_PASSWORD=your_gmail_app_password
+   METAAPI_TOKEN=your_metaapi_token
+   JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+   ```
+
+4. **Deploy** - Render will automatically build and deploy
+
+5. **Copy Backend URL** (e.g., `https://fund-backend-pbde.onrender.com`)
+
+6. **Configure Frontend**:
+   - In your frontend deployment platform (Bolt/Vercel/Netlify)
+   - Add environment variable: `VITE_API_URL=https://fund-backend-pbde.onrender.com/api`
+   - Redeploy frontend
+
+**✅ PRODUCTION**: Backend deployed at https://fund-backend-pbde.onrender.com
+
+### Alternative: Deploy to Railway
+
+1. Go to https://railway.app
+2. Create new project from GitHub
+3. Select backend directory
+4. Add same environment variables as above
+5. Deploy
+
+### Verify Deployment
+
+Test the health endpoint:
+```bash
+curl https://your-backend-url.onrender.com/health
+```
+
+Should return:
+```json
+{"status":"ok","timestamp":"2024-..."}
+```
+
+### Production Checklist
+
+- [ ] Backend deployed and accessible
+- [ ] All environment variables configured
+- [ ] Health endpoint responding
+- [ ] Frontend VITE_API_URL set
+- [ ] CORS configured for production domain
+- [ ] Email service tested
+- [ ] Database connection verified
+- [ ] SSL/HTTPS enabled
+- [ ] Monitoring/logging configured
+>>>>>>> email-verification
 
 ## Support
 
