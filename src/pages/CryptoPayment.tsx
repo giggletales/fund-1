@@ -33,6 +33,16 @@ export default function CryptoPayment() {
   const isPayAsYouGo = location.state?.isPayAsYouGo || urlParams.get('isPayAsYouGo') === 'true';
   const phase2Price = location.state?.phase2Price || Number(urlParams.get('phase2Price'));
 
+ // Debug logging
+ console.log('ChallengeTypes navigating to signup with state:', {
+ locationState: location.state,
+ urlParams: Object.fromEntries(urlParams.entries()),
+ challengeType,
+ accountSize,
+ originalPrice
+ });
+
+
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [selectedCrypto, setSelectedCrypto] = useState<'ETH' | 'SOL'>('ETH');
