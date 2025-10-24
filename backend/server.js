@@ -196,22 +196,71 @@ app.use((req, res) => {
 });
 
 const startServer = async () => {
-  try {
-    app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(60));
-      console.log('🚀 Fund8r Backend Server');
-      console.log('='.repeat(60));
-      console.log(`📡 Port: ${PORT}`);
-      console.log(`📊 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🗄️ Database: ${process.env.SUPABASE_URL ? 'Supabase Connected' : 'Not Configured'}`);
-      console.log(`📧 Email: ${process.env.SMTP_HOST ? 'SMTP Configured' : 'Not Configured (emails will log to console)'}`);
-      console.log('='.repeat(60));
-      console.log('✅ Server ready for requests\n');
+  const tryPort = (port) => {
+    return new Promise((resolve, reject) => {
+      const server = app.listen(port)
+        .on('listening', () => {
+          console.log('\n' + '='.repeat(60));
+          console.log('🚀 Fund8r Backend Server');
+          console.log('='.repeat(60));
+          console.log(`📡 Port: ${port}`);
+          console.log(`📊 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+          console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
+          console.log(`🗄️ Database: ${process.env.SUPABASE_URL ? 'Supabase Connected' : 'Not Configured'}`);
+          console.log(`📧 Email: ${process.env.SMTP_HOST ? 'SMTP Configured' : 'Not Configured (emails will log to console)'}`);
+          console.log('='.repeat(60));
+          console.log('✅ Server ready for requests\n');
+          resolve(server);
+        })
+        .on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            reject(err);
+          } else {
+            console.error('Server error:', err);
+            process.exit(1);
+          }
+        });
     });
+  };
+
+  try {
+    await tryPort(PORT);
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    if (error.code === 'EADDRINUSE') {
+      console.warn(`⚠️  Port ${PORT} is already in use`);
+      
+      // Try alternative ports
+      const alternativePorts = [5001, 5002, 5003, 3001, 3002];
+      let serverStarted = false;
+      
+      for (const altPort of alternativePorts) {
+        try {
+          console.log(`🔄 Trying port ${altPort}...`);
+          await tryPort(altPort);
+          console.log(`✅ Server started on alternative port ${altPort}`);
+          console.log(`💡 Update your frontend VITE_API_URL to: http://localhost:${altPort}/api`);
+          serverStarted = true;
+          break;
+        } catch (err) {
+          if (err.code === 'EADDRINUSE') {
+            console.warn(`⚠️  Port ${altPort} is also in use`);
+            continue;
+          } else {
+            throw err;
+          }
+        }
+      }
+      
+      if (!serverStarted) {
+        console.error('\n❌ All ports are in use. Please kill existing processes:');
+        console.error('   Run: lsof -ti:5000 | xargs kill -9');
+        console.error('   Or: pkill -f "node server.js"');
+        process.exit(1);
+      }
+    } else {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
   }
 };
 
