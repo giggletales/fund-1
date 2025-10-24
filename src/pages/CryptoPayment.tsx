@@ -336,7 +336,6 @@ export default function CryptoPayment() {
               console.error('Receipt generation error:', receiptError);
             }
           }
-        }
 
         setVerificationStatus('success');
 
