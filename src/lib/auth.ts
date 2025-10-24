@@ -38,21 +38,46 @@ export async function signUp(email: string, password: string, firstName: string,
   }
 
   // Create user profile with friendly ID
+  let friendlyId = null;
   try {
-    const { error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .insert({
         user_id: data.user.id,
         first_name: firstName,
         last_name: lastName,
         country: country || ''
-      });
+      })
+      .select('friendly_id')
+      .single();
 
     if (profileError) {
       console.error('Failed to create user profile:', profileError);
+      console.error('Profile error details:', JSON.stringify(profileError, null, 2));
+    } else if (profile) {
+      friendlyId = profile.friendly_id;
+      console.log('✅ User profile created successfully with friendly_id:', friendlyId);
     }
   } catch (profileError) {
     console.error('Error creating user profile:', profileError);
+  }
+
+  // If profile creation failed, try to fetch existing profile
+  if (!friendlyId) {
+    try {
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('friendly_id')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (existingProfile) {
+        friendlyId = existingProfile.friendly_id;
+        console.log('✅ Found existing user profile with friendly_id:', friendlyId);
+      }
+    } catch (fetchError) {
+      console.error('Error fetching existing profile:', fetchError);
+    }
   }
 
   // Send verification code via backend API (optional - don't fail signup if this fails)

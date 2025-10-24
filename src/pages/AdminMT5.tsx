@@ -43,6 +43,13 @@ export default function AdminMT5() {
 
       const usersMap = new Map(usersData?.map((u: any) => [u.id, u]) || []);
 
+      // Fetch user profiles to get friendly_id
+      const { data: profilesData } = await supabase
+        .from('user_profiles')
+        .select('user_id, friendly_id');
+
+      const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p.friendly_id]) || []);
+
       // Fetch ALL user challenges
       const { data: challengesData, error: challengesError } = await supabase
         .from('user_challenges')
@@ -51,21 +58,31 @@ export default function AdminMT5() {
 
       if (challengesError) throw challengesError;
 
+      console.log('Admin: Total challenges fetched:', challengesData?.length);
+      console.log('Admin: Challenges without trading_account_id:', challengesData?.filter(c => !c.trading_account_id).length);
+
       // Separate pending challenges (no trading_account_id yet)
+      // Include all statuses except 'pending_payment' (which means payment not completed)
       const pending = challengesData?.filter(c => !c.trading_account_id && c.status !== 'pending_payment').map((c: any) => {
         const user = usersMap.get(c.user_id);
+        const friendlyId = profilesMap.get(c.user_id) || 'N/A';
         return {
           id: c.id,
           user_id: c.user_id,
           user_email: user?.email || 'Unknown',
-          user_name: user?.full_name || 'N/A',
+          user_name: user?.full_name || user?.email?.split('@')[0] || 'N/A',
+          friendly_id: friendlyId,
           account_size: c.account_size,
-          challenge_type: c.challenge_type_id,
+          challenge_type: c.challenge_type || 'Unknown',
+          challenge_type_id: c.challenge_type_id,
           status: c.status,
           phase: 'pending_credentials',
-          created_at: c.purchase_date
+          created_at: c.purchase_date || c.created_at,
+          amount_paid: c.amount_paid
         };
       }) || [];
+
+      console.log('Admin: Pending challenges:', pending.length, pending);
 
       setPendingChallenges(pending);
 
@@ -283,12 +300,12 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
-                          <div className="font-bold text-lg">User ID: {challenge.unique_user_id}</div>
+                          <div className="font-bold text-lg">User ID: {challenge.friendly_id || 'N/A'}</div>
                           <div className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm font-semibold">
                             Awaiting Setup
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                           <div>
                             <div className="text-gray-400">Email</div>
                             <div className="font-semibold">{challenge.user_email}</div>
@@ -298,8 +315,12 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
                             <div className="font-semibold">${parseFloat(challenge.account_size).toLocaleString()}</div>
                           </div>
                           <div>
-                            <div className="text-gray-400">Platform</div>
-                            <div className="font-semibold">{challenge.platform}</div>
+                            <div className="text-gray-400">Challenge Type</div>
+ <div className="font-semibold">{challenge.challenge_type}</div>
+ </div>
+ <div>
+ <div className="text-gray-400">Amount Paid</div>
+ <div className="font-semibold">${parseFloat(challenge.amount_paid || 0).toFixed(2)}</div>
                           </div>
                           <div>
                             <div className="text-gray-400">Created</div>
@@ -309,7 +330,7 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
                       </div>
                       <button
                         onClick={() => setShowCreateModal(true)}
-                        className="ml-4 px-4 py-2 bg-gradient-to-r from-electric-blue to-neon-purple rounded-lg font-semibold hover:scale-105 transition-transform"
+                        className="ml-4 px-4 py-2 bg-gradient-to-r from-electric-blue to-neon-purple rounded-lg font-semibold hover:scale-105 transition-transform whitespace-nowrap"
                       >
                         Assign MT5
                       </button>

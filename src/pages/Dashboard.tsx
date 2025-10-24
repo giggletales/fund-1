@@ -195,6 +195,16 @@ function OverviewSection({ user }: { user: any }) {
 
   async function fetchData() {
     try {
+      // Fetch user's friendly_id from user_profiles
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('friendly_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const friendlyId = userProfile?.friendly_id || 'N/A';
+      console.log('User friendly_id:', friendlyId);
+
       const { data: challenges } = await supabase
         .from('user_challenges')
         .select(`
@@ -202,7 +212,7 @@ function OverviewSection({ user }: { user: any }) {
           challenge_type:challenge_types(challenge_name, challenge_code)
         `)
         .eq('user_id', user.id)
-        .order('purchase_date', { ascending: false });
+        .order('purchase_date', { ascending: false});
 
       // Check for unsigned contracts on first visit
       const unsigned = challenges?.find(c => !c.contract_signed && c.trading_account_id);
@@ -216,7 +226,10 @@ function OverviewSection({ user }: { user: any }) {
         !c.trading_account_id ||
         c.status === 'pending_payment' ||
         c.status === 'pending_credentials'
-      ) || [];
+      ).map(c => ({
+        ...c,
+        unique_user_id: friendlyId // Add friendly_id to each pending challenge
+      })) || [];
 
       const active = challenges?.filter(c =>
         c.trading_account_id &&
