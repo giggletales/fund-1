@@ -1311,9 +1311,14 @@ function CertificatesTab({ users }: { users: any[] }) {
       {activeTab === 'manual' && (
         <div>
           <div className="glass-card p-8 mb-6">
-       
+            <h3 className="text-xl font-bold mb-4">Select User</h3>
+            <SearchableUserDropdown 
+              onSelect={setSelectedUser}
+              selectedUser={selectedUser}
+            />
+          </div>
 
-      {selectedUser && (
+          {selectedUser && (
         <div className="glass-card p-8 mb-6">
           <h3 className="text-xl font-bold mb-4">Selected User</h3>
           <div className="bg-white/5 rounded-lg p-6 mb-6">
@@ -1541,16 +1546,11 @@ function UserProfilesTab({ users }: { users: any[] }) {
       <p className="text-white/70 mb-8">Complete user information and trading history</p>
 
       <div className="glass-card p-8 mb-6">
-        
-                  className="w-full text-left px-4 py-3 hover:bg-white/10 transition-all border-b border-white/5 last:border-0"
-                >
-                  <div className="font-semibold">{user.email}</div>
-                  <div className="text-sm text-white/60">{user.full_name || 'N/A'} - ID: {user.id.slice(0, 8)}</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <h3 className="text-xl font-bold mb-4">Select User</h3>
+        <SearchableUserDropdown 
+          onSelect={setSelectedUser}
+          selectedUser={selectedUser}
+        />
       </div>
 
       {selectedUser ? (
@@ -1662,8 +1662,9 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
               ))}
             </div>
           )}
+          </div>
         </div>
-      </div>
+      )}
 
       {selectedAccount ? (
         <div className="glass-card p-8">
