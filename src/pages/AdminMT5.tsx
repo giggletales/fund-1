@@ -667,11 +667,23 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
 
       if (challengesError) throw challengesError;
 
-      // Get user data separately
-      const { data: usersData, error: usersError } = await supabase.rpc('get_users_for_admin');
-      if (usersError) throw usersError;
+      // Get user data from user_profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id');
 
-      const usersMap = new Map(usersData?.map((u: any) => [u.id, u]) || []);
+      if (profilesError) {
+        console.warn('Could not load user profiles:', profilesError);
+      }
+
+      const usersMap = new Map(profilesData?.map((p: any) => [
+        p.user_id,
+        {
+          id: p.user_id,
+          email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'Unknown',
+          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
+        }
+      ]) || []);
 
       // Merge user data with challenges
       const enrichedChallenges = challenges?.map(challenge => {
@@ -922,14 +934,43 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
 
   async function loadUsers() {
     try {
-      const { data: profilesData, error } = await supabase
+      // Try to fetch from user_profiles first
+      const { data: profilesData, error: profilesError } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id, created_at')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-
       console.log('📊 SearchableUserDropdown: Loaded profiles:', profilesData?.length);
+      console.log('📊 SearchableUserDropdown: Error:', profilesError);
+
+      if (profilesError) {
+        console.warn('⚠️ Could not load from user_profiles, trying user_challenges...');
+        
+        // Fallback: Get unique users from user_challenges
+        const { data: challengesData, error: challengesError } = await supabase
+          .from('user_challenges')
+          .select('user_id, created_at')
+          .order('created_at', { ascending: false });
+
+        if (challengesError) throw challengesError;
+
+        // Get unique user IDs
+        const uniqueUserIds = [...new Set(challengesData?.map(c => c.user_id))];
+        console.log('📊 SearchableUserDropdown: Found unique users from challenges:', uniqueUserIds.length);
+
+        const formattedUsers = uniqueUserIds.map((userId, index) => ({
+          id: userId,
+          email: `User ${index + 1}`,
+          full_name: `User ${index + 1}`,
+          friendly_id: userId.slice(0, 8),
+          created_at: new Date().toISOString()
+        }));
+
+        console.log('✅ SearchableUserDropdown: Formatted users from challenges:', formattedUsers.length);
+        setUsers(formattedUsers);
+        setFilteredUsers(formattedUsers);
+        return;
+      }
       
       const formattedUsers = profilesData?.map((p: any) => ({
         id: p.user_id,
@@ -1188,11 +1229,12 @@ function CertificatesTab({ users }: { users: any[] }) {
 
   async function handleSendCertificate(pendingItem: any) {
     try {
-      let endpoint = 'http://localhost:5000/api/certificates/welcome';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      let endpoint = `${API_URL}/certificates/welcome`;
       let body: any = { user_id: pendingItem.user_id };
 
       if (pendingItem.type === 'challenge_started' || pendingItem.type === 'challenge_passed') {
-        endpoint = 'http://localhost:5000/api/certificates/challenge-started';
+        endpoint = `${API_URL}/certificates/challenge-started`;
         body = {
           user_id: pendingItem.user_id,
           account_id: pendingItem.account_id,
@@ -1556,7 +1598,7 @@ function UserProfilesTab({ users }: { users: any[] }) {
         />
       </div>
 
-      {selectedUser ? (
+      {selectedUser && (
         <div className="glass-card p-8">
           <h3 className="text-2xl font-bold mb-6">{selectedUser.email}</h3>
 
@@ -1581,12 +1623,7 @@ function UserProfilesTab({ users }: { users: any[] }) {
 
           <p className="text-white/60 text-center py-8">Full user profile details coming soon</p>
         </div>
-      ) : (
-        <div className="glass-card p-12 text-center">
-          <User size={64} className="mx-auto mb-4 text-white/30" />
-          <h3 className="text-xl font-bold mb-2">No User Selected</h3>
-          <p className="text-white/60">Search for a user to view their complete profile</p>
-        </div>
+     
       )}
     </div>
   );
@@ -1599,16 +1636,24 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const searchAccounts = (query: string) => {
+    if (!selectedUser) {
+      setSearchResults([]);
+      return;
+    }
+
     if (query.length < 3) {
       setSearchResults([]);
       return;
     }
 
-    const filtered = accounts?.filter((acc: any) =>
+    // Filter accounts for the selected user only
+    const userAccounts = accounts?.filter((acc: any) => acc.user_id === selectedUser.id) || [];
+    
+    const filtered = userAccounts.filter((acc: any) =>
       acc.mt5_login?.toLowerCase().includes(query.toLowerCase()) ||
       acc.user_email?.toLowerCase().includes(query.toLowerCase()) ||
-      acc.unique_user_id?.toLowerCase().includes(query.toLowerCase())
-    ) || [];
+      acc.account_type?.toLowerCase().includes(query.toLowerCase())
+    );
 
     setSearchResults(filtered.slice(0, 10));
   };
@@ -1625,26 +1670,34 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
 
       <div className="glass-card p-8 mb-6">
         <h3 className="text-xl font-bold mb-4">Select User First</h3>
- <SearchableUserDropdown
- onSelect={setSelectedUser}
- selectedUser={selectedUser}
- />
- </div>
- {selectedUser && (
- <div className="glass-card p-8 mb-6">
- <h3 className="text-xl font-bold mb-4">Search Account for {selectedUser.email}</h3>
- <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search by Account ID, User email, or MT5 Login..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              searchAccounts(e.target.value);
-            }}
-            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-red-500 focus:outline-none"
-          />
+        <SearchableUserDropdown
+          onSelect={setSelectedUser}
+          selectedUser={selectedUser}
+        />
+      </div>
+      {selectedUser && (
+        <div className="glass-card p-8 mb-6">
+          <h3 className="text-xl font-bold mb-4">Search Account for {selectedUser.email}</h3>
+          
+          {accounts?.filter(acc => acc.user_id === selectedUser.id).length === 0 ? (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-6 text-center">
+              <AlertTriangle size={48} className="mx-auto mb-3 text-yellow-500" />
+              <h4 className="font-bold text-yellow-500 mb-2">No Accounts Found</h4>
+              <p className="text-white/60 text-sm">This user has no MT5 accounts to breach.</p>
+            </div>
+          ) : (
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search by Account ID, User email, or MT5 Login..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  searchAccounts(e.target.value);
+                }}
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-red-500 focus:outline-none"
+              />
 
           {searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-deep-space border border-white/20 rounded-lg max-h-64 overflow-y-auto z-10">
