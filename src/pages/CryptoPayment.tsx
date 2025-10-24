@@ -201,30 +201,40 @@ export default function CryptoPayment() {
 
         console.log('Challenge type lookup:', { challengeType, challengeTypeData, challengeTypeError });
 
-        // Create user challenge record
-        if (challengeTypeData) {
-          const { data: userChallenge, error: userChallengeError } = await supabase
-            .from('user_challenges')
-            .insert({
-              user_id: user.id,
-              challenge_type_id: challengeTypeData.id,
-              account_size: accountSize,
-              amount_paid: finalPrice,
-              payment_id: payment?.id,
-              discount_applied: appliedCoupon ? true : false,
-              status: 'pending_credentials',
-              current_phase: isPayAsYouGo ? 1 : null,
-              phase_2_paid: false,
-              phase_2_price: isPayAsYouGo ? phase2Price : null
-            })
-            .select()
-            .maybeSingle();
+        // Create user challenge record - include both challenge_type and challenge_type_id for compatibility
+        const challengeInsertData: any = {
+          user_id: user.id,
+          challenge_type: challengeType, // Add the string type
+          account_size: accountSize,
+          amount_paid: finalPrice,
+          payment_id: payment?.id,
+          discount_applied: appliedCoupon ? true : false,
+          status: 'pending_credentials',
+          current_phase: isPayAsYouGo ? 1 : null,
+          phase_2_paid: false,
+          phase_2_price: isPayAsYouGo ? phase2Price : null
+        };
 
-          console.log('User challenge creation:', { userChallenge, userChallengeError });
+        // Add challenge_type_id if we found it
+        if (challengeTypeData?.id) {
+          challengeInsertData.challenge_type_id = challengeTypeData.id;
+        }
 
-          if (userChallengeError) {
-            console.error('Failed to create user challenge:', userChallengeError);
-          } else if (userChallenge) {
+        const { data: userChallenge, error: userChallengeError } = await supabase
+          .from('user_challenges')
+          .insert(challengeInsertData)
+          .select()
+          .maybeSingle();
+
+        console.log('User challenge creation:', { userChallenge, userChallengeError });
+
+        if (userChallengeError) {
+          console.error('Failed to create user challenge:', userChallengeError);
+          // Show error to user but don't completely fail
+          alert('Warning: Challenge account created but there was an issue saving details. Please contact support with your payment ID.');
+        }
+        
+        if (userChallenge) {
             // Generate purchase congratulations certificate
             try {
               const { error: certError } = await supabase
@@ -312,8 +322,6 @@ export default function CryptoPayment() {
               console.error('Receipt generation error:', receiptError);
             }
           }
-        } else {
-          console.error('Challenge type not found for code:', challengeType);
         }
 
         setVerificationStatus('success');
