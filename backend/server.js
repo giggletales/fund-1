@@ -163,12 +163,35 @@ app.post('/api/test-email', async (req, res) => {
   }
 });
 
+// Global error handler - must be after all routes
 app.use((err, req, res, next) => {
-  console.error('Global error handler:', err);
-  res.status(500).json({
+  console.error('Global error handler caught:', err);
+  console.error('Error stack:', err.stack);
+  
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
+  
+  const statusCode = err.statusCode || err.status || 500;
+  
+  res.status(statusCode).json({
     success: false,
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: err.message || 'Internal server error',
+    type: err.name || 'Error',
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: err.stack,
+      details: err.details
+    })
+  });
+});
+
+// 404 handler - must be after all routes but before error handler
+app.use((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
   });
 });
 

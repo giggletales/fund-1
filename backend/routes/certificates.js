@@ -47,10 +47,26 @@ router.post('/generate/:account_id', async (req, res) => {
 
 // Generate test certificate (bypasses RLS using service role)
 router.post('/generate-test', async (req, res) => {
+  // Set JSON content type immediately
+  res.setHeader('Content-Type', 'application/json');
+  
   try {
+    console.log('📝 Certificate generation request received');
+    console.log('📝 Request body:', JSON.stringify(req.body));
+    
+    // Validate Supabase connection
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized');
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection not available'
+      });
+    }
+
     const { user_id, user_email } = req.body;
 
     if (!user_id) {
+      console.error('❌ Missing user_id in request');
       return res.status(400).json({
         success: false,
         error: 'user_id is required'
@@ -60,12 +76,24 @@ router.post('/generate-test', async (req, res) => {
     console.log('📝 Generating test certificate for user:', user_id);
 
     // Get user's challenge if exists
-    const { data: userChallenge } = await supabase
-      .from('user_challenges')
-      .select('id, account_size, challenge_type')
-      .eq('user_id', user_id)
-      .limit(1)
-      .single();
+    let userChallenge = null;
+    try {
+      const { data, error } = await supabase
+        .from('user_challenges')
+        .select('id, account_size, challenge_type')
+        .eq('user_id', user_id)
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.warn('⚠️  Error fetching user challenge:', error.message);
+      } else if (data) {
+        userChallenge = data;
+        console.log('📝 Found user challenge:', userChallenge);
+      }
+    } catch (challengeError) {
+      console.warn('⚠️  Could not fetch user challenge:', challengeError.message);
+    }
 
     // Insert certificate using service role (bypasses RLS)
     const insertData = {
@@ -88,7 +116,7 @@ router.post('/generate-test', async (req, res) => {
       insertData.challenge_type = userChallenge.challenge_type;
     }
 
-    console.log('📝 Inserting certificate:', insertData);
+    console.log('📝 Inserting certificate with data:', JSON.stringify(insertData));
 
     const { data: certData, error: certError } = await supabase
       .from('downloads')
@@ -100,23 +128,36 @@ router.post('/generate-test', async (req, res) => {
       console.error('❌ Certificate insert failed:', certError);
       return res.status(500).json({
         success: false,
-        error: certError.message,
-        details: certError
+        error: certError.message || 'Failed to insert certificate',
+        code: certError.code,
+        details: certError.details || certError.hint
       });
     }
 
-    console.log('✅ Certificate created:', certData);
+    if (!certData) {
+      console.error('❌ No certificate data returned');
+      return res.status(500).json({
+        success: false,
+        error: 'Certificate created but no data returned'
+      });
+    }
 
-    res.json({
+    console.log('✅ Certificate created successfully:', certData.id);
+
+    return res.status(200).json({
       success: true,
       message: 'Test certificate generated successfully',
       data: certData
     });
   } catch (error) {
-    console.error('❌ Error generating test certificate:', error);
-    res.status(500).json({ 
+    console.error('❌ Unexpected error generating test certificate:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    // Ensure we always return JSON
+    return res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: error.message || 'Internal server error',
+      type: error.name || 'UnknownError'
     });
   }
 });

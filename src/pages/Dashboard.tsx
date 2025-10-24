@@ -1921,11 +1921,13 @@ function DownloadsSection() {
       console.log('🚀 Using backend API to generate certificate...');
       
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      console.log('📡 API URL:', API_URL);
       
       const response = await fetch(`${API_URL}/certificates/generate-test`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           user_id: user.id,
@@ -1933,12 +1935,29 @@ function DownloadsSection() {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate certificate');
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response content-type:', response.headers.get('content-type'));
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('❌ Non-JSON response received:', textResponse.substring(0, 200));
+        throw new Error(
+          `Backend returned HTML instead of JSON. This usually means:\n` +
+          `1. Backend server is not running\n` +
+          `2. Wrong API URL (current: ${API_URL})\n` +
+          `3. Backend route not found\n` +
+          `4. Backend crashed or returned an error page`
+        );
       }
 
       const result = await response.json();
+      console.log('📡 Response data:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || `Server error: ${response.status}`);
+      }
       
       if (result.success) {
         console.log('✅ Certificate created successfully:', result.data);
@@ -1949,7 +1968,14 @@ function DownloadsSection() {
       }
     } catch (error: any) {
       console.error('❌ Error generating test certificate:', error);
-      alert(`Failed to generate certificate: ${error.message}`);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message;
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Cannot connect to backend server. Please check if the backend is running.';
+      }
+      
+      alert(`Failed to generate certificate:\n\n${errorMessage}`);
     }
   }
 
