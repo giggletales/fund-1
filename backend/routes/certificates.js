@@ -98,12 +98,12 @@ router.post('/generate-test', async (req, res) => {
     // Insert certificate using service role (bypasses RLS)
     const insertData = {
       user_id: user_id,
-      document_type: 'certificate',
+      document_type: 'WELCOME_CERTIFICATE',
       title: 'Test Welcome Certificate',
       description: 'This is a test certificate generated from the dashboard',
       document_number: `TEST-${Date.now()}`,
       issue_date: new Date().toISOString(),
-      status: 'generated',
+      status: 'ready',
       auto_generated: false,
       generated_at: new Date().toISOString(),
       download_count: 0
