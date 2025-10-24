@@ -237,17 +237,17 @@ export default function CryptoPayment() {
           phase_2_price: isPayAsYouGo ? phase2Price : null
         };
 
-        // Add challenge_type_id - this is the primary way to reference the challenge type
+        // Add challenge_type_id if found, otherwise log warning but continue
         if (challengeTypeData?.id) {
           challengeInsertData.challenge_type_id = challengeTypeData.id;
           console.log('Using challenge_type_id:', challengeTypeData.id);
         } else {
-          // If we can't find the challenge type in the database, we can't proceed
-          console.error('Challenge type not found in database:', challengeType);
-          alert('Error: Invalid challenge type. Please contact support.');
-          setVerificationStatus('failed');
-          setVerifying(false);
-          return;
+          // Challenge type not found in database - log warning but allow purchase to continue
+          console.warn('Challenge type not found in database:', challengeType);
+          console.warn('Proceeding without challenge_type_id - admin will need to update manually');
+          
+          // Store the challenge code in a notes field for admin reference
+          challengeInsertData.notes = `Challenge code: ${challengeType} (type not found in database at purchase time)`;
         }
 
         console.log('Challenge insert data:', challengeInsertData);
