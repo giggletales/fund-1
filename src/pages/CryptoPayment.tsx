@@ -15,7 +15,11 @@ const API_KEYS = {
   SOLSCAN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTU4NjQ1OTM3MDYsImVtYWlsIjoidHJhZGVycmVkZ2Vwcm9AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU1ODY0NTkzfQ.r01wCcgg5IHtPqyFVyllfo2YZcyP55Cc6szaQuHre9c'
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://fund-backend-pbde.onrender.com/api';
+// Use localhost for development, production URL for deployed version
+const API_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : 'https://fund-backend-pbde.onrender.com/api');
+
+console.log('🔗 API_URL:', API_URL);
 
 export default function CryptoPayment() {
   const navigate = useNavigate();
