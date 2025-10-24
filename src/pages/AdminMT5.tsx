@@ -908,6 +908,114 @@ function generatePassword() {
   return password;
 }
 
+// Reusable Searchable User Dropdown Component
+function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: any) => void; selectedUser: any }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  async function loadUsers() {
+    try {
+      const { data: profilesData, error } = await supabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedUsers = profilesData?.map((p: any) => ({
+        id: p.user_id,
+        email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
+        full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        friendly_id: p.friendly_id,
+        created_at: p.created_at
+      })) || [];
+
+      setUsers(formattedUsers);
+      setFilteredUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (searchTerm.length === 0) {
+      setFilteredUsers(users);
+    } else {
+      const filtered = users.filter(u => 
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.friendly_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchTerm, users]);
+
+  return (
+    <div className="relative">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:border-electric-blue transition-colors flex items-center justify-between"
+      >
+        <span className={selectedUser ? 'text-white' : 'text-white/50'}>
+          {selectedUser ? `${selectedUser.email} (${selectedUser.friendly_id})` : 'Select a user...'}
+        </span>
+        <Search size={20} className="text-white/40" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-deep-space border border-white/20 rounded-lg max-h-96 overflow-hidden z-50 shadow-2xl">
+          <div className="p-3 border-b border-white/10 sticky top-0 bg-deep-space">
+            <input
+              type="text"
+              placeholder="Search by name, email, or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none text-sm"
+              autoFocus
+            />
+          </div>
+          
+          <div className="max-h-80 overflow-y-auto">
+            {loading ? (
+              <div className="p-8 text-center text-white/60">Loading users...</div>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map(user => (
+                <button
+                  key={user.id}
+                  onClick={() => {
+                    onSelect(user);
+                    setIsOpen(false);
+                    setSearchTerm('');
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-white/10 transition-all border-b border-white/5 last:border-0"
+                >
+                  <div className="font-semibold text-white">{user.email}</div>
+                  <div className="text-sm text-white/60 flex items-center gap-2">
+                    <span>{user.full_name || 'N/A'}</span>
+                    <span>•</span>
+                    <span className="font-mono text-xs">ID: {user.friendly_id}</span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="p-8 text-center text-white/60">No users found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CertificateCard({ icon, title, description, userId }: any) {
   const [sending, setSending] = useState(false);
 
@@ -956,9 +1064,7 @@ function CertificateCard({ icon, title, description, userId }: any) {
 }
 
 function CertificatesTab({ users }: { users: any[] }) {
-  const [searchEmail, setSearchEmail] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [pendingCertificates, setPendingCertificates] = useState<any[]>([]);
   const [sentHistory, setSentHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1074,19 +1180,8 @@ function CertificatesTab({ users }: { users: any[] }) {
     }
   }
 
-  const searchUsers = (email: string) => {
-    if (email.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-
-    const filtered = users?.filter((u: any) =>
-      u.email.toLowerCase().includes(email.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(email.toLowerCase())
-    ) || [];
-
-    setSearchResults(filtered.slice(0, 10));
-  };
+  
+  
 
   async function handleSendCertificate(pendingItem: any) {
     try {
@@ -1216,39 +1311,7 @@ function CertificatesTab({ users }: { users: any[] }) {
       {activeTab === 'manual' && (
         <div>
           <div className="glass-card p-8 mb-6">
-        <h3 className="text-xl font-bold mb-4">Search User</h3>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by email or name..."
-            value={searchEmail}
-            onChange={(e) => {
-              setSearchEmail(e.target.value);
-              searchUsers(e.target.value);
-            }}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none"
-          />
-
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-deep-space border border-white/20 rounded-lg max-h-64 overflow-y-auto z-10">
-              {searchResults.map(user => (
-                <button
-                  key={user.id}
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setSearchEmail(user.email);
-                    setSearchResults([]);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-white/10 transition-all border-b border-white/5 last:border-0"
-                >
-                  <div className="font-semibold">{user.email}</div>
-                  <div className="text-sm text-white/60">{user.full_name || 'N/A'} - ID: {user.id.slice(0, 8)}</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+       
 
       {selectedUser && (
         <div className="glass-card p-8 mb-6">
@@ -1468,23 +1531,7 @@ function CompetitionsTab({ users }: { users: any[] }) {
 }
 
 function UserProfilesTab({ users }: { users: any[] }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-
-  const searchUsers = (query: string) => {
-    if (query.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-
-    const filtered = users?.filter((u: any) =>
-      u.email.toLowerCase().includes(query.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(query.toLowerCase())
-    ) || [];
-
-    setSearchResults(filtered.slice(0, 10));
-  };
+ const [selectedUser, setSelectedUser] = useState<any>(null);
 
   return (
     <div>
@@ -1494,29 +1541,7 @@ function UserProfilesTab({ users }: { users: any[] }) {
       <p className="text-white/70 mb-8">Complete user information and trading history</p>
 
       <div className="glass-card p-8 mb-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search by email, name, or user ID..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              searchUsers(e.target.value);
-            }}
-            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none"
-          />
-
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-deep-space border border-white/20 rounded-lg max-h-64 overflow-y-auto z-10">
-              {searchResults.map(user => (
-                <button
-                  key={user.id}
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setSearchTerm(user.email);
-                    setSearchResults([]);
-                  }}
+        
                   className="w-full text-left px-4 py-3 hover:bg-white/10 transition-all border-b border-white/5 last:border-0"
                 >
                   <div className="font-semibold">{user.email}</div>
@@ -1595,8 +1620,16 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
       </div>
 
       <div className="glass-card p-8 mb-6">
-        <h3 className="text-xl font-bold mb-4">Search Account</h3>
-        <div className="relative">
+        <h3 className="text-xl font-bold mb-4">Select User First</h3>
+ <SearchableUserDropdown
+ onSelect={setSelectedUser}
+ selectedUser={selectedUser}
+ />
+ </div>
+ {selectedUser && (
+ <div className="glass-card p-8 mb-6">
+ <h3 className="text-xl font-bold mb-4">Search Account for {selectedUser.email}</h3>
+ <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
