@@ -214,6 +214,16 @@ export default function CryptoPayment() {
           return;
         }
 
+        // Define challenge type mapping (used for lookup and insert)
+        const typeNameMap: Record<string, string> = {
+          'ELITE_ROYAL': 'elite',
+          'CLASSIC_2STEP': 'standard',
+          'RAPID_FIRE': 'rapid',
+          'PAYG_2STEP': 'professional',
+          'AGGRESSIVE_2STEP': 'swing',
+          'SWING_PRO': 'scaling'
+        };
+
         // Get challenge type ID and details - try multiple lookup strategies
         let challengeTypeData = null;
         
@@ -229,16 +239,6 @@ export default function CryptoPayment() {
           console.log('Found challenge by challenge_code:', challengeTypeData);
         } else {
           // Strategy 2: Try by type_name (for backward compatibility)
-          // Map ELITE_ROYAL to 'elite' type_name
-          const typeNameMap: Record<string, string> = {
-            'ELITE_ROYAL': 'elite',
-            'CLASSIC_2STEP': 'standard',
-            'RAPID_FIRE': 'rapid',
-            'PAYG_2STEP': 'professional',
-            'AGGRESSIVE_2STEP': 'swing',
-            'SWING_PRO': 'scaling'
-          };
-          
           const typeName = typeNameMap[challengeType] || challengeType.toLowerCase();
           
           const { data: dataByTypeName } = await supabase
@@ -265,8 +265,14 @@ export default function CryptoPayment() {
         }
 
         // Create user challenge record using challenge_type_id
+        // Derive challenge_type text from challengeTypeData or map
+        const challengeTypeText = challengeTypeData.type_name || 
+                                  typeNameMap[challengeType] || 
+                                  challengeType.toLowerCase();
+        
         const challengeInsertData: any = {
           user_id: user.id,
+          challenge_type: challengeTypeText,
           challenge_type_id: challengeTypeData.id,
           account_size: accountSize,
           amount_paid: finalPrice,
