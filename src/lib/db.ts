@@ -1,32 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 
-// NEW DATABASE (Primary)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Configuration
+const config = {
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://mvgcwqmsawopumuksqmz.supabase.co',
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyODg5OTQ2MCwiZXhwIjoyMDQ0NDc1NDYwfQ.4z95PVq2JQ6QZ0vLQw3JkQdQJ8Q1X9Z8QkQ5Q9X9X9X9',
+  supabaseServiceKey: import.meta.env.VITE_SUPABASE_SERVICE_KEY || 'your-service-key-here'
+};
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseKey
+// Validate configuration
+if (!config.supabaseUrl || !config.supabaseAnonKey) {
+  console.error('Missing Supabase configuration:', {
+    supabaseUrl: !!config.supabaseUrl,
+    supabaseAnonKey: !!config.supabaseAnonKey
   });
 }
 
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
-
-// OLD DATABASE (Legacy - for migration)
-const oldSupabaseUrl = 'https://mvgcwqmsawopumuksqmz.supabase.co';
-const oldSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc';
-
-export const oldSupabase = createClient(oldSupabaseUrl, oldSupabaseKey, {
+// Create Supabase client with admin privileges
+export const supabase = createClient(config.supabaseUrl, config.supabaseServiceKey, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-    storageKey: 'supabase-old-db'
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
   }
 });
+
+// Create read-only client for public data
+export const publicSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+// For backward compatibility
+export const oldSupabase = supabase;
 
 export const db = {
   query: async (text: string, params?: any[]) => {
