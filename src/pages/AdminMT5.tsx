@@ -1593,6 +1593,7 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const searchAccounts = (query: string) => {
     if (query.length < 3) {
