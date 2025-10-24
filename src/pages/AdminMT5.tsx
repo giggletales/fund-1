@@ -1036,91 +1036,16 @@ function generatePassword() {
 }
 
 // Reusable Searchable User Dropdown Component
-function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: any) => void; selectedUser: any }) {
+function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { onSelect: (user: any) => void; selectedUser: any; users?: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Use users from props if available, otherwise empty array
+  const users = propUsers || [];
+
   useEffect(() => {
-    loadUsers();
-  }, []);
-
-  async function loadUsers() {
-    try {
-      console.log('🔄 Loading users from BOTH databases...');
-      
-      // NEW DATABASE (current Supabase instance)
-      const { data: newChallenges, error: newError } = await supabase
-        .from('user_challenges')
-        .select('user_id, created_at')
-        .order('created_at', { ascending: false });
-
-      const newUserIds = [...new Set(newChallenges?.map(c => c.user_id) || [])];
-      console.log('📊 NEW Database: Found', newUserIds.length, 'unique users');
-
-      // Get profiles from NEW database
-      const { data: newProfiles } = await supabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id')
-        .in('user_id', newUserIds);
-
-      const newProfilesMap = new Map(newProfiles?.map(p => [p.user_id, p]) || []);
-
-      // Format NEW database users
-      const newUsers = newUserIds.map((userId, index) => {
-        const profile = newProfilesMap.get(userId);
-        return {
-          id: userId,
-          email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `User ${index + 1}` : `User ${index + 1}`,
-          full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `User ${index + 1}`,
-          friendly_id: profile?.friendly_id || userId.slice(0, 8),
-          created_at: newChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
-          source: 'NEW DB' as const
-        };
-      });
-
-      // OLD DATABASE
-      let oldUsers: any[] = [];
-      
-      try {
-        const { data: oldChallenges } = await oldSupabase
-          .from('user_challenges')
-          .select('user_id, created_at')
-          .order('created_at', { ascending: false });
-
-        const oldUserIds = [...new Set(oldChallenges?.map(c => c.user_id) || [])];
-        console.log('📊 OLD Database: Found', oldUserIds.length, 'unique users');
-
-        // Get profiles from OLD database
-        const { data: oldProfiles } = await oldSupabase
-          .from('user_profiles')
-          .select('user_id, first_name, last_name, friendly_id')
-          .in('user_id', oldUserIds);
-
-        const oldProfilesMap = new Map(oldProfiles?.map(p => [p.user_id, p]) || []);
-
-        // Format OLD database users
-        oldUsers = oldUserIds.map((userId, index) => {
-          const profile = oldProfilesMap.get(userId);
-          return {
-            id: userId,
-            email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `Old User ${index + 1}` : `Old User ${index + 1}`,
-            full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `Old User ${index + 1}`,
-            friendly_id: profile?.friendly_id || userId.slice(0, 8),
-            created_at: oldChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
-            source: 'OLD DB' as const
-          };
-        });
-      } catch (oldDbError: any) {
-        console.warn('⚠️ OLD Database unavailable in user dropdown:', oldDbError.message || 'Connection failed');
-      }
-
-      // MERGE both databases - remove duplicates by user_id
-      const allUsersMap = new Map();
-      
-      // Add NEW database users first (priority)
+    // Filter users based on search term
       newUsers.forEach(user => allUsersMap.set(user.id, user));
       
       // Add OLD database users (only if not already in NEW)
