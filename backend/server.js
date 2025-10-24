@@ -59,37 +59,57 @@ const verificationLimiter = rateLimit({
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:3000',
   'https://fund8r.onrender.com',
   'https://fund8r-frontend.onrender.com',
   'https://fund8r.com',
   'https://www.fund8r.com',
+  'http://fund8r.com',
+  'http://www.fund8r.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+console.log('🔐 CORS allowed origins:', allowedOrigins);
+
 // Enable pre-flight requests for all routes
-app.options('*', cors());
+app.options('*', cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-JSON'],
+  maxAge: 86400
+}));
 
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, curl, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    console.log('🔍 CORS: Checking origin:', origin);
     
     // Check if origin is in allowed list or is a Render/localhost domain or fund8r.com domain
     if (allowedOrigins.includes(origin) || 
         origin.endsWith('.onrender.com') || 
         origin.includes('localhost') ||
-        origin.endsWith('fund8r.com')) {
+        origin.includes('fund8r.com')) {
+      console.log('✅ CORS: Allowing origin:', origin);
       callback(null, true);
     } else {
-      console.warn('CORS blocked origin:', origin);
+      console.warn('⚠️  CORS: Unknown origin (allowing anyway):', origin);
       callback(null, true); // Allow anyway for now, but log it
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
   exposedHeaders: ['Content-Length', 'X-JSON'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 app.use(express.json());
