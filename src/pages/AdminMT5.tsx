@@ -810,7 +810,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
           trading_account_id: formData.mt5_login,
           trading_account_password: formData.mt5_password,
           trading_account_server: formData.mt5_server,
-          status: 'credentials_given',
+          status: 'active',  // Valid statuses: 'active', 'passed', 'failed', 'funded', 'breached'
           credentials_sent: false
         })
         .eq('id', selectedChallenge.id);
