@@ -2068,195 +2068,453 @@ function generateCertificateHTML(doc: any, user: any) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${doc.title || 'Fund8r Certificate'}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+    
+    @keyframes glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
     body {
-      font-family: 'Georgia', serif;
-      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      font-family: 'Rajdhani', sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f0a1e 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
-    }
-    .certificate {
-      background: white;
-      max-width: 1000px;
-      width: 100%;
-      padding: 60px;
-      border: 20px solid #0066FF;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       position: relative;
+      overflow: hidden;
     }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(123, 46, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(0, 102, 255, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .certificate {
+      background: linear-gradient(135deg, #0d1129 0%, #1a1f3a 50%, #0f0a1e 100%);
+      max-width: 1200px;
+      width: 100%;
+      padding: 0;
+      border: 3px solid;
+      border-image: linear-gradient(135deg, #7B2EFF, #0066FF, #7B2EFF) 1;
+      box-shadow: 
+        0 0 60px rgba(123, 46, 255, 0.4),
+        0 0 120px rgba(0, 102, 255, 0.2),
+        inset 0 0 60px rgba(123, 46, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
     .certificate::before {
       content: '';
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
-      border: 2px solid #7B2EFF;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(123, 46, 255, 0.03) 2px,
+          rgba(123, 46, 255, 0.03) 4px
+        );
+      pointer-events: none;
     }
+    
+    .certificate::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+    }
+    
+    .cert-inner {
+      padding: 60px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .corner-decoration {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid;
+    }
+    
+    .corner-decoration.top-left {
+      top: 20px;
+      left: 20px;
+      border-right: none;
+      border-bottom: none;
+      border-image: linear-gradient(135deg, #7B2EFF, transparent) 1;
+    }
+    
+    .corner-decoration.top-right {
+      top: 20px;
+      right: 20px;
+      border-left: none;
+      border-bottom: none;
+      border-image: linear-gradient(225deg, #0066FF, transparent) 1;
+    }
+    
+    .corner-decoration.bottom-left {
+      bottom: 20px;
+      left: 20px;
+      border-right: none;
+      border-top: none;
+      border-image: linear-gradient(45deg, #7B2EFF, transparent) 1;
+    }
+    
+    .corner-decoration.bottom-right {
+      bottom: 20px;
+      right: 20px;
+      border-left: none;
+      border-top: none;
+      border-image: linear-gradient(315deg, #0066FF, transparent) 1;
+    }
+    
     .header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 50px;
+      position: relative;
     }
+    
     .logo {
-      font-size: 48px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #0066FF, #7B2EFF);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 64px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #7B2EFF 0%, #0066FF 50%, #7B2EFF 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+      letter-spacing: 8px;
       margin-bottom: 10px;
+      text-shadow: 0 0 30px rgba(123, 46, 255, 0.5);
+      animation: glow 3s ease-in-out infinite;
     }
+    
     .subtitle {
-      color: #666;
-      font-size: 18px;
-      font-style: italic;
+      color: #8B9DC3;
+      font-size: 16px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
     }
+    
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #7B2EFF, #0066FF, #7B2EFF, transparent);
+      margin: 30px 0;
+      box-shadow: 0 0 10px rgba(123, 46, 255, 0.5);
+    }
+    
     .title {
-      font-size: 42px;
-      color: #0066FF;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #FFFFFF 0%, #8B9DC3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       text-align: center;
       margin: 40px 0;
       text-transform: uppercase;
-      letter-spacing: 3px;
+      letter-spacing: 6px;
+      line-height: 1.2;
     }
+    
     .content {
       text-align: center;
-      font-size: 20px;
+      font-size: 22px;
       line-height: 1.8;
-      color: #333;
-      margin: 30px 0;
-    }
-    .recipient {
-      font-size: 36px;
-      font-weight: bold;
-      color: #7B2EFF;
-      margin: 20px 0;
-      text-decoration: underline;
-    }
-    .details {
+      color: #B8C5D6;
       margin: 40px 0;
-      padding: 20px;
-      background: #f8f9fa;
-      border-left: 4px solid #0066FF;
+      font-weight: 300;
     }
+    
+    .content p {
+      margin: 15px 0;
+    }
+    
+    .recipient {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 42px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #7B2EFF 0%, #0066FF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 30px 0;
+      padding: 20px;
+      border: 2px solid;
+      border-image: linear-gradient(90deg, transparent, #7B2EFF, transparent) 1;
+      position: relative;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .recipient::before,
+    .recipient::after {
+      content: '▸';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #7B2EFF;
+      font-size: 24px;
+      animation: glow 2s ease-in-out infinite;
+    }
+    
+    .recipient::before {
+      left: 10px;
+    }
+    
+    .recipient::after {
+      right: 10px;
+      content: '◂';
+    }
+    
+    .details {
+      margin: 50px 0;
+      padding: 30px;
+      background: linear-gradient(135deg, rgba(123, 46, 255, 0.1) 0%, rgba(0, 102, 255, 0.1) 100%);
+      border: 1px solid rgba(123, 46, 255, 0.3);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 
+        0 8px 32px rgba(123, 46, 255, 0.2),
+        inset 0 0 20px rgba(123, 46, 255, 0.1);
+    }
+    
     .detail-row {
       display: flex;
       justify-content: space-between;
-      margin: 10px 0;
-      font-size: 16px;
+      margin: 15px 0;
+      font-size: 18px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(123, 46, 255, 0.2);
     }
+    
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    
     .detail-label {
-      font-weight: bold;
-      color: #666;
+      font-weight: 600;
+      color: #8B9DC3;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 14px;
     }
+    
     .detail-value {
-      color: #333;
+      font-family: 'Orbitron', sans-serif;
+      color: #FFFFFF;
+      font-weight: 600;
     }
+    
     .signature-section {
       display: flex;
       justify-content: space-around;
-      margin-top: 60px;
+      margin-top: 80px;
       padding-top: 40px;
+      border-top: 2px solid;
+      border-image: linear-gradient(90deg, transparent, #7B2EFF, #0066FF, #7B2EFF, transparent) 1;
     }
+    
     .signature {
       text-align: center;
     }
+    
     .signature-line {
       width: 250px;
       height: 2px;
-      background: #333;
-      margin: 20px auto 10px;
+      background: linear-gradient(90deg, transparent, #7B2EFF, transparent);
+      margin: 20px auto 15px;
+      box-shadow: 0 0 10px rgba(123, 46, 255, 0.5);
     }
+    
     .signature-name {
-      font-weight: bold;
-      font-size: 18px;
-      color: #333;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: #FFFFFF;
+      margin-bottom: 5px;
     }
+    
     .signature-title {
-      color: #666;
+      color: #8B9DC3;
       font-size: 14px;
+      font-weight: 300;
+      letter-spacing: 1px;
     }
+    
     .seal {
       position: absolute;
-      bottom: 40px;
-      right: 40px;
-      width: 100px;
-      height: 100px;
-      border: 3px solid #0066FF;
+      bottom: 50px;
+      right: 50px;
+      width: 120px;
+      height: 120px;
+      border: 3px solid #7B2EFF;
       border-radius: 50%;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      color: #0066FF;
-      font-size: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      color: #7B2EFF;
+      font-size: 14px;
       text-align: center;
       transform: rotate(-15deg);
+      background: radial-gradient(circle, rgba(123, 46, 255, 0.2) 0%, transparent 70%);
+      box-shadow: 
+        0 0 20px rgba(123, 46, 255, 0.6),
+        inset 0 0 20px rgba(123, 46, 255, 0.2);
+      animation: glow 3s ease-in-out infinite;
     }
+    
+    .seal::before {
+      content: '';
+      position: absolute;
+      width: 90%;
+      height: 90%;
+      border: 2px solid rgba(123, 46, 255, 0.3);
+      border-radius: 50%;
+    }
+    
+    .document-type-badge {
+      display: inline-block;
+      padding: 8px 20px;
+      background: linear-gradient(135deg, rgba(123, 46, 255, 0.2), rgba(0, 102, 255, 0.2));
+      border: 1px solid #7B2EFF;
+      border-radius: 20px;
+      color: #7B2EFF;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    
     @media print {
       body {
-        background: white;
+        background: #0a0e27;
       }
       .certificate {
         box-shadow: none;
+      }
+      .certificate::after {
+        display: none;
       }
     }
   </style>
 </head>
 <body>
   <div class="certificate">
-    <div class="header">
-      <div class="logo">Fund8r</div>
-      <div class="subtitle">Premier Proprietary Trading Firm</div>
-    </div>
-
-    <div class="title">Certificate of ${doc.document_type === 'certificate' ? 'Achievement' : doc.document_type}</div>
-
-    <div class="content">
-      <p>This certifies that</p>
-      <div class="recipient">${user.email}</div>
-      <p>${doc.description || 'has successfully completed the requirements'}</p>
-    </div>
-
-    <div class="details">
-      <div class="detail-row">
-        <span class="detail-label">Document Number:</span>
-        <span class="detail-value">${doc.document_number || 'N/A'}</span>
+    <div class="corner-decoration top-left"></div>
+    <div class="corner-decoration top-right"></div>
+    <div class="corner-decoration bottom-left"></div>
+    <div class="corner-decoration bottom-right"></div>
+    
+    <div class="cert-inner">
+      <div class="header">
+        <div class="logo">FUND8R</div>
+        <div class="subtitle">Next-Generation Proprietary Trading</div>
       </div>
-      <div class="detail-row">
-        <span class="detail-label">Issue Date:</span>
-        <span class="detail-value">${issueDate}</span>
-      </div>
-      ${doc.account_size ? `
-      <div class="detail-row">
-        <span class="detail-label">Account Size:</span>
-        <span class="detail-value">$${parseFloat(doc.account_size).toLocaleString()}</span>
-      </div>
-      ` : ''}
-    </div>
 
-    <div class="signature-section">
-      <div class="signature">
-        <div class="signature-line"></div>
-        <div class="signature-name">Michael Johnson</div>
-        <div class="signature-title">Chief Executive Officer</div>
+      <div class="divider"></div>
+      
+      <div style="text-align: center;">
+        <span class="document-type-badge">${doc.document_type || 'Certificate'}</span>
       </div>
-      <div class="signature">
-        <div class="signature-line"></div>
-        <div class="signature-name">Sarah Williams</div>
-        <div class="signature-title">Director of Operations</div>
-      </div>
-    </div>
 
-    <div class="seal">
-      OFFICIAL<br>SEAL
+      <div class="title">${doc.title || 'Digital Certificate'}</div>
+
+      <div class="content">
+        <p>This digital certificate verifies that</p>
+        <div class="recipient">${user.email}</div>
+        <p>${doc.description || 'has successfully achieved this milestone in their trading journey'}</p>
+      </div>
+
+      <div class="details">
+        <div class="detail-row">
+          <span class="detail-label">Document ID</span>
+          <span class="detail-value">${doc.document_number || 'N/A'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Issue Date</span>
+          <span class="detail-value">${issueDate}</span>
+        </div>
+        ${doc.challenge_type ? `
+        <div class="detail-row">
+          <span class="detail-label">Challenge Type</span>
+          <span class="detail-value">${doc.challenge_type}</span>
+        </div>
+        ` : ''}
+        ${doc.account_size ? `
+        <div class="detail-row">
+          <span class="detail-label">Account Size</span>
+          <span class="detail-value">$${parseFloat(doc.account_size).toLocaleString()}</span>
+        </div>
+        ` : ''}
+        ${doc.amount ? `
+        <div class="detail-row">
+          <span class="detail-label">Amount</span>
+          <span class="detail-value">$${parseFloat(doc.amount).toFixed(2)}</span>
+        </div>
+        ` : ''}
+      </div>
+
+      <div class="signature-section">
+        <div class="signature">
+          <div class="signature-line"></div>
+          <div class="signature-name">MICHAEL JOHNSON</div>
+          <div class="signature-title">Chief Executive Officer</div>
+        </div>
+        <div class="signature">
+          <div class="signature-line"></div>
+          <div class="signature-name">SARAH WILLIAMS</div>
+          <div class="signature-title">Director of Operations</div>
+        </div>
+      </div>
+
+      <div class="seal">
+        <div>VERIFIED</div>
+        <div style="font-size: 10px; margin-top: 5px;">FUND8R</div>
+      </div>
     </div>
   </div>
 </body>

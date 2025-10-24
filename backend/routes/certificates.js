@@ -155,6 +155,193 @@ router.post('/invoice', async (req, res) => {
   }
 });
 
+// Test endpoint: Generate all document types for a user
+router.post('/test/generate-all', async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      });
+    }
+
+    // Get user data
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(user_id);
+    
+    if (userError || !user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Trader';
+    const userEmail = user.email;
+    const results = [];
+
+    // 1. Generate Welcome Certificate
+    try {
+      const welcomeCert = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user_id,
+          document_type: 'certificate',
+          title: 'Welcome to Fund8r',
+          description: 'Thank you for joining our trading community!',
+          document_number: `WELCOME-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          status: 'generated',
+          auto_generated: true,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (welcomeCert.data) {
+        results.push({ type: 'welcome_certificate', status: 'success', id: welcomeCert.data.id });
+      }
+    } catch (error) {
+      results.push({ type: 'welcome_certificate', status: 'failed', error: error.message });
+    }
+
+    // 2. Generate Purchase Congratulations Certificate
+    try {
+      const purchaseCert = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user_id,
+          document_type: 'certificate',
+          title: 'Purchase Congratulations Certificate',
+          description: 'Congratulations on purchasing your Elite Royal challenge!',
+          document_number: `PURCHASE-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          challenge_type: 'ELITE_ROYAL',
+          account_size: 2000000,
+          status: 'generated',
+          auto_generated: true,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (purchaseCert.data) {
+        results.push({ type: 'purchase_certificate', status: 'success', id: purchaseCert.data.id });
+      }
+    } catch (error) {
+      results.push({ type: 'purchase_certificate', status: 'failed', error: error.message });
+    }
+
+    // 3. Generate Invoice
+    try {
+      const invoice = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user_id,
+          document_type: 'invoice',
+          title: 'Purchase Invoice',
+          description: 'Invoice for Elite Royal challenge purchase',
+          document_number: `INV-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          challenge_type: 'ELITE_ROYAL',
+          account_size: 2000000,
+          amount: 0.00,
+          status: 'generated',
+          auto_generated: true,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (invoice.data) {
+        results.push({ type: 'invoice', status: 'success', id: invoice.data.id });
+      }
+    } catch (error) {
+      results.push({ type: 'invoice', status: 'failed', error: error.message });
+    }
+
+    // 4. Generate Receipt
+    try {
+      const receipt = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user_id,
+          document_type: 'receipt',
+          title: 'Payment Receipt',
+          description: 'Payment receipt for Elite Royal challenge',
+          document_number: `RCPT-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          challenge_type: 'ELITE_ROYAL',
+          account_size: 2000000,
+          amount: 0.00,
+          payment_method: 'coupon',
+          transaction_id: 'FREE_' + Date.now(),
+          status: 'generated',
+          auto_generated: true,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (receipt.data) {
+        results.push({ type: 'receipt', status: 'success', id: receipt.data.id });
+      }
+    } catch (error) {
+      results.push({ type: 'receipt', status: 'failed', error: error.message });
+    }
+
+    // 5. Generate Challenge Started Certificate
+    try {
+      const challengeCert = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user_id,
+          document_type: 'certificate',
+          title: 'Challenge Started Certificate',
+          description: 'Your Elite Royal challenge has officially begun!',
+          document_number: `CHALLENGE-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          challenge_type: 'ELITE_ROYAL',
+          account_size: 2000000,
+          status: 'generated',
+          auto_generated: true,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (challengeCert.data) {
+        results.push({ type: 'challenge_certificate', status: 'success', id: challengeCert.data.id });
+      }
+    } catch (error) {
+      results.push({ type: 'challenge_certificate', status: 'failed', error: error.message });
+    }
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    const failedCount = results.filter(r => r.status === 'failed').length;
+
+    res.json({
+      success: true,
+      message: `Generated ${successCount} documents successfully, ${failedCount} failed`,
+      data: {
+        total: results.length,
+        successful: successCount,
+        failed: failedCount,
+        results: results
+      }
+    });
+  } catch (error) {
+    console.error('Error generating test documents:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get all user documents
 router.get('/user/:user_id/documents', async (req, res) => {
   try {
