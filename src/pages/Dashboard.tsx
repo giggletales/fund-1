@@ -1919,20 +1919,38 @@ function DownloadsSection() {
       
       // Try direct Supabase insert first
       console.log('📝 Attempting direct Supabase insert...');
+      
+      // Get user's first challenge for challenge_id (if required)
+      const { data: userChallenge } = await supabase
+        .from('user_challenges')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+      
+      const insertData: any = {
+        user_id: user.id,
+        document_type: 'certificate',
+        title: 'Test Welcome Certificate',
+        description: 'This is a test certificate generated from the dashboard',
+        document_number: `TEST-${Date.now()}`,
+        issue_date: new Date().toISOString(),
+        status: 'generated',
+        auto_generated: false,
+        generated_at: new Date().toISOString(),
+        download_count: 0
+      };
+      
+      // Add challenge_id if user has a challenge
+      if (userChallenge?.id) {
+        insertData.challenge_id = userChallenge.id;
+      }
+      
+      console.log('📝 Insert data:', insertData);
+      
       const { data: certData, error: certError } = await supabase
         .from('downloads')
-        .insert({
-          user_id: user.id,
-          document_type: 'certificate',
-          title: 'Test Welcome Certificate',
-          description: 'This is a test certificate generated from the dashboard',
-          document_number: `TEST-${Date.now()}`,
-          issue_date: new Date().toISOString(),
-          status: 'generated',
-          auto_generated: false,
-          generated_at: new Date().toISOString(),
-          download_count: 0
-        })
+        .insert(insertData)
         .select()
         .single();
 
