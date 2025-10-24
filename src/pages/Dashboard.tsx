@@ -1910,24 +1910,44 @@ function DownloadsSection() {
   async function generateTestCertificate() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/certificates/welcome`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        alert('Test certificate generated successfully!');
-        fetchDownloads();
-      } else {
-        alert('Failed to generate certificate: ' + (data.error || 'Unknown error'));
+      if (!user) {
+        alert('No user logged in');
+        return;
       }
-    } catch (error) {
-      console.error('Error generating test certificate:', error);
-      alert('Failed to generate certificate');
+
+      console.log('🎫 Generating test certificate for user:', user.id);
+      
+      // Try direct Supabase insert first
+      console.log('📝 Attempting direct Supabase insert...');
+      const { data: certData, error: certError } = await supabase
+        .from('downloads')
+        .insert({
+          user_id: user.id,
+          document_type: 'certificate',
+          title: 'Test Welcome Certificate',
+          description: 'This is a test certificate generated from the dashboard',
+          document_number: `TEST-${Date.now()}`,
+          issue_date: new Date().toISOString(),
+          status: 'generated',
+          auto_generated: false,
+          generated_at: new Date().toISOString(),
+          download_count: 0
+        })
+        .select()
+        .single();
+
+      if (certError) {
+        console.error('❌ Direct insert failed:', certError);
+        alert(`Failed to generate certificate: ${certError.message}\n\nDetails: ${JSON.stringify(certError, null, 2)}`);
+        return;
+      }
+
+      console.log('✅ Certificate created successfully:', certData);
+      alert('✅ Test certificate generated successfully!');
+      fetchDownloads();
+    } catch (error: any) {
+      console.error('❌ Error generating test certificate:', error);
+      alert(`Failed to generate certificate: ${error.message}`);
     }
   }
 

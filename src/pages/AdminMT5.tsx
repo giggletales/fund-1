@@ -85,6 +85,12 @@ export default function AdminMT5() {
       console.log('Admin: Pending challenges:', pending.length, pending);
 
       setPendingChallenges(pending);
+      
+      // Show alert if no pending challenges found but there should be
+      if (pending.length === 0 && challengesData && challengesData.length > 0) {
+        console.warn('⚠️ No pending challenges found, but there are', challengesData.length, 'total challenges');
+        console.log('Challenge statuses:', challengesData.map(c => ({ id: c.id, status: c.status, has_trading_id: !!c.trading_account_id })));
+      }
 
       // Format challenges as "accounts" for display
       const formattedAccounts = challengesData?.filter(c => c.trading_account_id).map((c: any) => {
