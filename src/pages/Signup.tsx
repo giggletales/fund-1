@@ -63,18 +63,27 @@ export default function Signup() {
     if (result.success) {
       console.log('State check:', { returnTo, accountSize, challengeType, originalPrice });
 
+      // Store email for verification page
+      localStorage.setItem('verificationEmail', formData.email);
+
+      // If there's a pending payment, store it for after verification
       if (returnTo && accountSize && challengeType && originalPrice !== undefined) {
-        console.log('Navigating to payment page');
-
-        // Use query parameters for more reliable data transfer
-        const paymentUrl = `/payment?accountSize=${accountSize}&challengeType=${encodeURIComponent(challengeType)}&originalPrice=${originalPrice}${isPayAsYouGo ? `&isPayAsYouGo=true&phase2Price=${phase2Price}` : ''}`;
-        console.log('Payment URL:', paymentUrl);
-
-        window.location.href = paymentUrl;
-      } else {
-        console.log('Missing state values:', { returnTo, accountSize, challengeType, originalPrice });
-        window.location.href = '/dashboard';
+        console.log('Storing pending payment data');
+        localStorage.setItem('pendingPayment', JSON.stringify({
+          accountSize,
+          challengeType,
+          originalPrice,
+          isPayAsYouGo,
+          phase2Price
+        }));
       }
+
+      // Always redirect to email verification after signup
+      console.log('Redirecting to email verification');
+      navigate('/email-verification', { 
+        state: { email: formData.email },
+        replace: true 
+      });
     } else {
       setError(result.error || 'Registration failed');
       setLoading(false);

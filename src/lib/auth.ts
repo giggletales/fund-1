@@ -57,27 +57,58 @@ export async function signUp(email: string, password: string, firstName: string,
 
   // Send verification code via backend API
   try {
+    console.log('Sending verification code to:', email);
+    console.log('API URL:', `${API_URL}/verification/send-code`);
+    
     const response = await fetch(`${API_URL}/verification/send-code`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ email }),
+      mode: 'cors',
+      credentials: 'include'
     });
     
+    console.log('Verification API response status:', response.status);
+    
     if (!response.ok) {
-      console.warn('Verification email request failed:', response.status, response.statusText);
-      return { success: false, error: 'Failed to send verification email. Please try again.' };
+      const errorText = await response.text();
+      console.error('Verification email request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      return { 
+        success: false, 
+        error: `Failed to send verification email (${response.status}). Please try again.` 
+      };
     }
     
     const result = await response.json();
+    console.log('Verification API result:', result);
+    
     if (!result.success) {
       console.warn('Failed to send verification code:', result.message || result.error);
-      return { success: false, error: result.message || 'Failed to send verification email' };
+      return { 
+        success: false, 
+        error: result.message || 'Failed to send verification email' 
+      };
     }
     
-    console.log('Verification code sent successfully');
-  } catch (error) {
+    console.log('✅ Verification code sent successfully');
+  } catch (error: any) {
     console.error('Error sending verification code:', error);
-    return { success: false, error: 'Error sending confirmation email' };
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    return { 
+      success: false, 
+      error: `Network error: ${error.message}. Please check your connection and try again.` 
+    };
   }
 
   return { success: true, user: data.user };
