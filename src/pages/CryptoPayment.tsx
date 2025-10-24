@@ -278,7 +278,7 @@ export default function CryptoPayment() {
           amount_paid: finalPrice,
           payment_id: payment?.id,
           discount_applied: appliedCoupon ? true : false,
-          status: 'pending_credentials',
+          status: 'active', // Valid values: 'active', 'passed', 'failed', 'funded', 'breached'
           current_phase: isPayAsYouGo ? 1 : null,
           phase_2_paid: false,
           phase_2_price: isPayAsYouGo ? phase2Price : null
