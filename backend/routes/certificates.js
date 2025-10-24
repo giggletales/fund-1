@@ -45,6 +45,82 @@ router.post('/generate/:account_id', async (req, res) => {
   }
 });
 
+// Generate test certificate (bypasses RLS using service role)
+router.post('/generate-test', async (req, res) => {
+  try {
+    const { user_id, user_email } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      });
+    }
+
+    console.log('📝 Generating test certificate for user:', user_id);
+
+    // Get user's challenge if exists
+    const { data: userChallenge } = await supabase
+      .from('user_challenges')
+      .select('id, account_size, challenge_type')
+      .eq('user_id', user_id)
+      .limit(1)
+      .single();
+
+    // Insert certificate using service role (bypasses RLS)
+    const insertData = {
+      user_id: user_id,
+      document_type: 'certificate',
+      title: 'Test Welcome Certificate',
+      description: 'This is a test certificate generated from the dashboard',
+      document_number: `TEST-${Date.now()}`,
+      issue_date: new Date().toISOString(),
+      status: 'generated',
+      auto_generated: false,
+      generated_at: new Date().toISOString(),
+      download_count: 0
+    };
+
+    // Add challenge_id if user has a challenge
+    if (userChallenge?.id) {
+      insertData.challenge_id = userChallenge.id;
+      insertData.account_size = userChallenge.account_size;
+      insertData.challenge_type = userChallenge.challenge_type;
+    }
+
+    console.log('📝 Inserting certificate:', insertData);
+
+    const { data: certData, error: certError } = await supabase
+      .from('downloads')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (certError) {
+      console.error('❌ Certificate insert failed:', certError);
+      return res.status(500).json({
+        success: false,
+        error: certError.message,
+        details: certError
+      });
+    }
+
+    console.log('✅ Certificate created:', certData);
+
+    res.json({
+      success: true,
+      message: 'Test certificate generated successfully',
+      data: certData
+    });
+  } catch (error) {
+    console.error('❌ Error generating test certificate:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Generate welcome certificate
 router.post('/welcome', async (req, res) => {
   try {
