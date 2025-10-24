@@ -934,40 +934,96 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
 
   async function loadUsers() {
     try {
-      // Get unique users from user_challenges (most reliable source)
-      const { data: challengesData, error: challengesError } = await supabase
+      console.log('🔄 Loading users from BOTH databases...');
+      
+      // NEW DATABASE (current Supabase instance)
+      const { data: newChallenges, error: newError } = await supabase
         .from('user_challenges')
         .select('user_id, created_at')
         .order('created_at', { ascending: false });
 
-      if (challengesError) throw challengesError;
+      const newUserIds = [...new Set(newChallenges?.map(c => c.user_id) || [])];
+      console.log('📊 NEW Database: Found', newUserIds.length, 'unique users');
 
-      // Get unique user IDs
-      const uniqueUserIds = [...new Set(challengesData?.map(c => c.user_id))];
-      console.log('📊 SearchableUserDropdown: Found unique users from challenges:', uniqueUserIds.length);
-
-      // Try to get user_profiles for those users
-      const { data: profilesData } = await supabase
+      // Get profiles from NEW database
+      const { data: newProfiles } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id')
-        .in('user_id', uniqueUserIds);
+        .in('user_id', newUserIds);
 
-      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      const newProfilesMap = new Map(newProfiles?.map(p => [p.user_id, p]) || []);
 
-      const formattedUsers = uniqueUserIds.map((userId, index) => {
-        const profile = profilesMap.get(userId);
+      // Format NEW database users
+      const newUsers = newUserIds.map((userId, index) => {
+        const profile = newProfilesMap.get(userId);
         return {
           id: userId,
           email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `User ${index + 1}` : `User ${index + 1}`,
           full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `User ${index + 1}`,
           friendly_id: profile?.friendly_id || userId.slice(0, 8),
-          created_at: challengesData?.find(c => c.user_id === userId)?.created_at || new Date().toISOString()
+          created_at: newChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
+          source: 'NEW DB' as const
         };
       });
 
-      console.log('✅ SearchableUserDropdown: Formatted users:', formattedUsers.length);
-      setUsers(formattedUsers);
-      setFilteredUsers(formattedUsers);
+      // OLD DATABASE - Create separate Supabase client
+      const { createClient } = await import('@supabase/supabase-js');
+      const oldSupabase = createClient(
+        'https://mvgcwqmsawopumuksqmz.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc'
+      );
+
+      const { data: oldChallenges } = await oldSupabase
+        .from('user_challenges')
+        .select('user_id, created_at')
+        .order('created_at', { ascending: false });
+
+      const oldUserIds = [...new Set(oldChallenges?.map(c => c.user_id) || [])];
+      console.log('📊 OLD Database: Found', oldUserIds.length, 'unique users');
+
+      // Get profiles from OLD database
+      const { data: oldProfiles } = await oldSupabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id')
+        .in('user_id', oldUserIds);
+
+      const oldProfilesMap = new Map(oldProfiles?.map(p => [p.user_id, p]) || []);
+
+      // Format OLD database users
+      const oldUsers = oldUserIds.map((userId, index) => {
+        const profile = oldProfilesMap.get(userId);
+        return {
+          id: userId,
+          email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `Old User ${index + 1}` : `Old User ${index + 1}`,
+          full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `Old User ${index + 1}`,
+          friendly_id: profile?.friendly_id || userId.slice(0, 8),
+          created_at: oldChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
+          source: 'OLD DB' as const
+        };
+      });
+
+      // MERGE both databases - remove duplicates by user_id
+      const allUsersMap = new Map();
+      
+      // Add NEW database users first (priority)
+      newUsers.forEach(user => allUsersMap.set(user.id, user));
+      
+      // Add OLD database users (only if not already in NEW)
+      oldUsers.forEach(user => {
+        if (!allUsersMap.has(user.id)) {
+          allUsersMap.set(user.id, user);
+        }
+      });
+
+      const mergedUsers = Array.from(allUsersMap.values());
+      
+      console.log('✅ MERGED: Total unique users:', mergedUsers.length);
+      console.log('   - From NEW DB:', newUsers.length);
+      console.log('   - From OLD DB:', oldUsers.length);
+      console.log('   - Unique total:', mergedUsers.length);
+      
+      setUsers(mergedUsers);
+      setFilteredUsers(mergedUsers);
     } catch (error) {
       console.error('❌ SearchableUserDropdown: Error loading users:', error);
     } finally {
@@ -1027,7 +1083,16 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-white/10 transition-all border-b border-white/5 last:border-0"
                 >
-                  <div className="font-semibold text-white">{user.email}</div>
+                 <div className="flex items-center justify-between">
+ <div className="font-semibold text-white">{user.email}</div>
+ <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+ user.source === 'NEW DB'
+ ? 'bg-neon-green/20 text-neon-green'
+ : 'bg-electric-blue/20 text-electric-blue'
+ }`}>
+ {user.source}
+ </span>
+ </div>
                   <div className="text-sm text-white/60 flex items-center gap-2">
                     <span>{user.full_name || 'N/A'}</span>
                     <span>•</span>
