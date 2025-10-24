@@ -196,7 +196,7 @@ export default function AdminMT5() {
         challenges: challengesData.filter((c: any) => c.user_id === user.id)
       }));
       
-      setUsers(allUsers);
+      setUsers(usersData);
       setLoading(false);
       setError(null);
       
