@@ -201,10 +201,22 @@ export default function CryptoPayment() {
 
         console.log('Challenge type lookup:', { challengeType, challengeTypeData, challengeTypeError });
 
+        // Validate challengeType before proceeding
+        if (!challengeType) {
+          console.error('Challenge type is missing!', { 
+            locationState: location.state,
+            urlParams: Object.fromEntries(urlParams.entries())
+          });
+          alert('Error: Challenge type is missing. Please go back and select a challenge again.');
+          setVerificationStatus('failed');
+          setVerifying(false);
+          return;
+        }
+
         // Create user challenge record - include both challenge_type and challenge_type_id for compatibility
         const challengeInsertData: any = {
           user_id: user.id,
-          challenge_type: challengeType, // Add the string type
+          challenge_type: challengeType.toString(), // Ensure it's a string
           account_size: accountSize,
           amount_paid: finalPrice,
           payment_id: payment?.id,
@@ -214,6 +226,8 @@ export default function CryptoPayment() {
           phase_2_paid: false,
           phase_2_price: isPayAsYouGo ? phase2Price : null
         };
+
+        console.log('Challenge insert data:', challengeInsertData);
 
         // Add challenge_type_id if we found it
         if (challengeTypeData?.id) {
