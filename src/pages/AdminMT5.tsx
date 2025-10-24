@@ -60,24 +60,36 @@ export default function AdminMT5() {
       console.log('✅ NEW Database: Found', newChallengesData?.length || 0, 'challenges');
 
       // ========== OLD DATABASE ==========
-      const { data: oldProfilesData, error: oldProfilesError } = await oldSupabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id');
+      let oldProfilesData = null;
+      let oldChallengesData = null;
       
-      if (oldProfilesError) {
-        console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError);
+      try {
+        const { data: profiles, error: oldProfilesError } = await oldSupabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, friendly_id');
+        
+        if (oldProfilesError) {
+          console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError.message);
+        } else {
+          oldProfilesData = profiles;
+        }
+
+        const { data: challenges, error: oldChallengesError } = await oldSupabase
+          .from('user_challenges')
+          .select('*')
+          .order('purchase_date', { ascending: false });
+
+        if (oldChallengesError) {
+          console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError.message);
+        } else {
+          oldChallengesData = challenges;
+        }
+
+        console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
+      } catch (oldDbError: any) {
+        console.warn('⚠️ OLD Database unavailable:', oldDbError.message || 'Connection failed');
+        console.log('📊 Continuing with NEW database only...');
       }
-
-      const { data: oldChallengesData, error: oldChallengesError } = await oldSupabase
-        .from('user_challenges')
-        .select('*')
-        .order('purchase_date', { ascending: false });
-
-      if (oldChallengesError) {
-        console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError);
-      }
-
-      console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
 
       // ========== MERGE DATA ==========
       // Merge profiles from both databases
@@ -204,10 +216,9 @@ export default function AdminMT5() {
 
       setAccounts(formattedAccounts);
 
-      // Set users from the already loaded data
-      if (usersData) {
-        setUsers(usersData);
-      }
+      // Set users from the already loaded data (convert usersMap to array)
+      const usersData = Array.from(usersMap.values());
+      setUsers(usersData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -713,23 +724,34 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       }
 
       // OLD DATABASE
-      const { data: oldChallenges, error: oldChallengesError } = await oldSupabase
-        .from('user_challenges')
-        .select('*')
-        .is('trading_account_id', null)
-        .neq('status', 'pending_payment')
-        .order('purchase_date', { ascending: false });
+      let oldChallenges = null;
+      let oldProfilesData = null;
+      
+      try {
+        const { data: challenges, error: oldChallengesError } = await oldSupabase
+          .from('user_challenges')
+          .select('*')
+          .is('trading_account_id', null)
+          .neq('status', 'pending_payment')
+          .order('purchase_date', { ascending: false });
 
-      if (oldChallengesError) {
-        console.warn('Error loading OLD DB challenges:', oldChallengesError);
-      }
+        if (oldChallengesError) {
+          console.warn('Error loading OLD DB challenges:', oldChallengesError.message);
+        } else {
+          oldChallenges = challenges;
+        }
 
-      const { data: oldProfilesData, error: oldProfilesError } = await oldSupabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id');
+        const { data: profiles, error: oldProfilesError } = await oldSupabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, friendly_id');
 
-      if (oldProfilesError) {
-        console.warn('Could not load OLD DB user profiles:', oldProfilesError);
+        if (oldProfilesError) {
+          console.warn('Could not load OLD DB user profiles:', oldProfilesError.message);
+        } else {
+          oldProfilesData = profiles;
+        }
+      } catch (oldDbError: any) {
+        console.warn('⚠️ OLD Database unavailable for pending challenges:', oldDbError.message || 'Connection failed');
       }
 
       // Merge profiles
@@ -1047,34 +1069,40 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
       });
 
       // OLD DATABASE
-      const { data: oldChallenges } = await oldSupabase
-        .from('user_challenges')
-        .select('user_id, created_at')
-        .order('created_at', { ascending: false });
+      let oldUsers: any[] = [];
+      
+      try {
+        const { data: oldChallenges } = await oldSupabase
+          .from('user_challenges')
+          .select('user_id, created_at')
+          .order('created_at', { ascending: false });
 
-      const oldUserIds = [...new Set(oldChallenges?.map(c => c.user_id) || [])];
-      console.log('📊 OLD Database: Found', oldUserIds.length, 'unique users');
+        const oldUserIds = [...new Set(oldChallenges?.map(c => c.user_id) || [])];
+        console.log('📊 OLD Database: Found', oldUserIds.length, 'unique users');
 
-      // Get profiles from OLD database
-      const { data: oldProfiles } = await oldSupabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id')
-        .in('user_id', oldUserIds);
+        // Get profiles from OLD database
+        const { data: oldProfiles } = await oldSupabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, friendly_id')
+          .in('user_id', oldUserIds);
 
-      const oldProfilesMap = new Map(oldProfiles?.map(p => [p.user_id, p]) || []);
+        const oldProfilesMap = new Map(oldProfiles?.map(p => [p.user_id, p]) || []);
 
-      // Format OLD database users
-      const oldUsers = oldUserIds.map((userId, index) => {
-        const profile = oldProfilesMap.get(userId);
-        return {
-          id: userId,
-          email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `Old User ${index + 1}` : `Old User ${index + 1}`,
-          full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `Old User ${index + 1}`,
-          friendly_id: profile?.friendly_id || userId.slice(0, 8),
-          created_at: oldChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
-          source: 'OLD DB' as const
-        };
-      });
+        // Format OLD database users
+        oldUsers = oldUserIds.map((userId, index) => {
+          const profile = oldProfilesMap.get(userId);
+          return {
+            id: userId,
+            email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `Old User ${index + 1}` : `Old User ${index + 1}`,
+            full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `Old User ${index + 1}`,
+            friendly_id: profile?.friendly_id || userId.slice(0, 8),
+            created_at: oldChallenges?.find(c => c.user_id === userId)?.created_at || new Date().toISOString(),
+            source: 'OLD DB' as const
+          };
+        });
+      } catch (oldDbError: any) {
+        console.warn('⚠️ OLD Database unavailable in user dropdown:', oldDbError.message || 'Connection failed');
+      }
 
       // MERGE both databases - remove duplicates by user_id
       const allUsersMap = new Map();
