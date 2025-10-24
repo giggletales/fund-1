@@ -40,6 +40,7 @@ UPDATE challenge_types SET challenge_code = 'PAYG_2STEP' WHERE type_name = 'prof
 UPDATE challenge_types SET challenge_code = 'AGGRESSIVE_2STEP' WHERE type_name = 'swing';
 UPDATE challenge_types SET challenge_code = 'SWING_PRO' WHERE type_name = 'scaling';
 UPDATE challenge_types SET challenge_code = 'ELITE_ROYAL' WHERE type_name = 'elite_royal';
+UPDATE challenge_types SET challenge_code = 'ELITE_ROYAL' WHERE type_name = 'elite';
 
 -- Create index on challenge_code
 CREATE INDEX IF NOT EXISTS idx_challenge_types_code ON challenge_types(challenge_code);

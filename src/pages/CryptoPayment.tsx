@@ -223,10 +223,19 @@ export default function CryptoPayment() {
           return;
         }
 
-        // Create user challenge record using challenge_type_id only
-        // Don't use challenge_type field to avoid CHECK constraint issues
+        // If challenge type not found in database, this is a critical error
+        if (!challengeTypeData) {
+          console.error('Challenge type not found in database:', challengeType);
+          alert(`Error: Challenge type "${challengeType}" not found in database. Please contact support.`);
+          setVerificationStatus('failed');
+          setVerifying(false);
+          return;
+        }
+
+        // Create user challenge record using challenge_type_id
         const challengeInsertData: any = {
           user_id: user.id,
+          challenge_type_id: challengeTypeData.id,
           account_size: accountSize,
           amount_paid: finalPrice,
           payment_id: payment?.id,
@@ -236,19 +245,6 @@ export default function CryptoPayment() {
           phase_2_paid: false,
           phase_2_price: isPayAsYouGo ? phase2Price : null
         };
-
-        // Add challenge_type_id if found, otherwise log warning but continue
-        if (challengeTypeData?.id) {
-          challengeInsertData.challenge_type_id = challengeTypeData.id;
-          console.log('Using challenge_type_id:', challengeTypeData.id);
-        } else {
-          // Challenge type not found in database - log warning but allow purchase to continue
-          console.warn('Challenge type not found in database:', challengeType);
-          console.warn('Proceeding without challenge_type_id - admin will need to update manually');
-          
-          // Store the challenge code in a notes field for admin reference
-          challengeInsertData.notes = `Challenge code: ${challengeType} (type not found in database at purchase time)`;
-        }
 
         console.log('Challenge insert data:', challengeInsertData);
 
@@ -262,8 +258,18 @@ export default function CryptoPayment() {
 
         if (userChallengeError) {
           console.error('Failed to create user challenge:', userChallengeError);
-          // Show error to user but don't completely fail
-          alert('Warning: Challenge account created but there was an issue saving details. Please contact support with your payment ID.');
+          alert(`Error creating challenge: ${userChallengeError.message}. Please contact support with your payment ID: ${payment?.id}`);
+          setVerificationStatus('failed');
+          setVerifying(false);
+          return;
+        }
+
+        if (!userChallenge) {
+          console.error('User challenge was not created');
+          alert('Error: Challenge was not created. Please contact support with your payment ID: ' + payment?.id);
+          setVerificationStatus('failed');
+          setVerifying(false);
+          return;
         }
         
         if (userChallenge) {
