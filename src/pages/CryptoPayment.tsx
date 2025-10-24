@@ -202,10 +202,10 @@ export default function CryptoPayment() {
           });
         }
 
-        // Get challenge type ID
+        // Get challenge type ID and details
         const { data: challengeTypeData, error: challengeTypeError } = await supabase
           .from('challenge_types')
-          .select('id')
+          .select('id, challenge_code, name')
           .eq('challenge_code', challengeType)
           .maybeSingle();
 
@@ -223,10 +223,33 @@ export default function CryptoPayment() {
           return;
         }
 
+        // Map challenge codes to valid database challenge_type values
+        // The database challenge_type column has a CHECK constraint with specific allowed values
+        const challengeTypeMapping: { [key: string]: string } = {
+          'ELITE_ROYAL': 'standard',
+          'RAPID_FREE': 'rapid',
+          'SCALING_PRO': 'scaling',
+          'PROFESSIONAL': 'professional',
+          'SWING_TRADER': 'swing',
+          'MASTER_TRADER': 'master',
+          // Fallback mappings
+          'standard': 'standard',
+          'rapid': 'rapid',
+          'scaling': 'scaling',
+          'professional': 'professional',
+          'swing': 'swing',
+          'master': 'master'
+        };
+
+        // Get the mapped challenge type, or use the original if not found
+        const mappedChallengeType = challengeTypeMapping[challengeType] || challengeType.toLowerCase();
+        
+        console.log('Challenge type mapping:', { original: challengeType, mapped: mappedChallengeType });
+
         // Create user challenge record - include both challenge_type and challenge_type_id for compatibility
         const challengeInsertData: any = {
           user_id: user.id,
-          challenge_type: challengeType.toString(), // Ensure it's a string
+          challenge_type: mappedChallengeType, // Use the mapped value
           account_size: accountSize,
           amount_paid: finalPrice,
           payment_id: payment?.id,
