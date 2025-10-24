@@ -39,164 +39,190 @@ export default function AdminMT5() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Loading data from database...');
+      console.log('🔄 Loading data from BOTH databases...');
       
-      // ========== FETCH USERS ==========
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('id, email, created_at')
-        .order('created_at', { ascending: false });
-      
-      if (usersError) {
-        console.error('❌ Error fetching users:', usersError);
-        throw usersError;
-      }
-
-      // ========== FETCH PROFILES ==========
-      const { data: profiles, error: profilesError } = await supabase
+      // ========== NEW DATABASE ==========
+      const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id')
-        .in('user_id', users?.map(u => u.id) || []);
+        .select('user_id, first_name, last_name, friendly_id, email');
       
-      if (profilesError) {
-        console.error('❌ Error fetching user profiles:', profilesError);
-        throw profilesError;
+      if (newProfilesError) {
+        console.error('❌ Error fetching NEW DB user profiles:', newProfilesError);
       }
 
-      // ========== FETCH CHALLENGES ==========
-      const { data: challenges, error: challengesError } = await supabase
+      const { data: newChallengesData, error: newChallengesError } = await supabase
         .from('user_challenges')
         .select('*')
         .order('purchase_date', { ascending: false });
 
-      if (challengesError) {
-        console.error('❌ Error fetching challenges:', challengesError);
-        throw challengesError;
+      if (newChallengesError) {
+        console.error('❌ Error fetching NEW DB challenges:', newChallengesError);
       }
 
-      console.log('✅ Database: Found', users?.length || 0, 'users and', challenges?.length || 0, 'challenges');
+      console.log('✅ NEW Database: Found', newChallengesData?.length || 0, 'challenges');
 
-      // Create maps for quick lookups
-      const usersMap = new Map(users?.map(u => [u.id, u]));
-      const profilesMap = new Map(profiles?.map(p => [p.user_id, p]));
-      const challengesData = challenges || [];
+      // ========== OLD DATABASE ==========
+      let oldProfilesData = null;
+      let oldChallengesData = null;
+      
+      try {
+        const { data: profiles, error: oldProfilesError } = await oldSupabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, friendly_id, email');
+        
+        if (oldProfilesError) {
+          console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError.message);
+        } else {
+          oldProfilesData = profiles;
+        }
 
-      console.log('📊 Admin: Challenges breakdown:', {
-        total: challengesData.length,
-        with_credentials: challengesData.filter(c => c.trading_account_id).length,
-        without_credentials: challengesData.filter(c => !c.trading_account_id).length,
-        by_status: challengesData.reduce((acc, c) => {
-          acc[c.status] = (acc[c.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
+        const { data: challenges, error: oldChallengesError } = await oldSupabase
+          .from('user_challenges')
+          .select('*')
+          .order('purchase_date', { ascending: false });
+
+        if (oldChallengesError) {
+          console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError.message);
+        } else {
+          oldChallengesData = challenges;
+        }
+
+        console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
+      } catch (oldDbError: any) {
+        console.warn('⚠️ OLD Database unavailable:', oldDbError.message || 'Connection failed');
+        console.log('📊 Continuing with NEW database only...');
+      }
+
+      // ========== MERGE DATA ==========
+      // Merge profiles from both databases
+      const allProfilesData = [...(newProfilesData || []), ...(oldProfilesData || [])];
+      
+      // Create a map of user info by user_id
+      const profilesMap = new Map(allProfilesData.map((p: any) => [
+        p.user_id, 
+        {
+          user_id: p.user_id,
+          email: p.email || `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
+          first_name: p.first_name,
+          last_name: p.last_name,
+          friendly_id: p.friendly_id,
+          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
+        }
+      ]));
+
+      // Merge challenges from both databases and add source tracking
+      const newChallengesWithSource = (newChallengesData || []).map(c => ({ ...c, _db_source: 'NEW' }));
+      const oldChallengesWithSource = (oldChallengesData || []).map(c => ({ ...c, _db_source: 'OLD' }));
+      const challengesData = [...newChallengesWithSource, ...oldChallengesWithSource];
+
+      console.log('📊 MERGED: Total challenges:', challengesData.length);
+      console.log('   - From NEW DB:', newChallengesData?.length || 0);
+      console.log('   - From OLD DB:', oldChallengesData?.length || 0);
+
+      console.log('📊 Admin: Challenge statuses breakdown:', {
+        total: challengesData?.length || 0,
+        with_credentials: challengesData?.filter(c => c.trading_account_id).length || 0,
+        without_credentials: challengesData?.filter(c => !c.trading_account_id).length || 0,
+        active: challengesData?.filter(c => c.status === 'active').length || 0,
+        pending_payment: challengesData?.filter(c => c.status === 'pending_payment').length || 0,
       });
 
-      // Process pending challenges (no trading_account_id yet)
-      const pending = challengesData
-        .filter(c => !c.trading_account_id && c.status !== 'pending_payment')
-        .map((c: any) => {
-          const user = usersMap.get(c.user_id);
-          const profile = profilesMap.get(c.user_id);
-          const email = user?.email || 'Unknown';
-          const name = profile ? 
-            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-            email.split('@')[0] || 'User';
-
-          console.log('🔍 Pending challenge:', {
+      // Separate pending challenges (no trading_account_id yet)
+      // Include all statuses except 'pending_payment' (which means payment not completed)
+      const pending = challengesData?.filter(c => {
+        const needsCredentials = !c.trading_account_id && c.status !== 'pending_payment';
+        if (needsCredentials) {
+          console.log('🔍 Pending challenge found:', {
             id: c.id,
             user_id: c.user_id,
-            email,
-            name,
             status: c.status,
             account_size: c.account_size,
             challenge_type: c.challenge_type,
             purchase_date: c.purchase_date
           });
+        }
+        return needsCredentials;
+      }).map((c: any) => {
+        const profile = profilesMap.get(c.user_id);
+        const email = profile?.email || 'Unknown';
+        const name = profile?.full_name || email.split('@')[0] || 'N/A';
+        
+        return {
+          id: c.id,
+          user_id: c.user_id,
+          user_email: email,
+          user_name: name,
+          friendly_id: profile?.friendly_id || 'N/A',
+          account_size: c.account_size,
+          challenge_type: c.challenge_type || 'Unknown',
+          challenge_type_id: c.challenge_type_id,
+          status: c.status,
+          phase: 'pending_credentials',
+          created_at: c.purchase_date || c.created_at,
+          amount_paid: c.amount_paid
+        };
+      }) || [];
 
-          return {
-            id: c.id,
-            user_id: c.user_id,
-            user_email: email,
-            user_name: name,
-            friendly_id: profile?.friendly_id || 'N/A',
-            account_size: c.account_size,
-            challenge_type: c.challenge_type || 'Unknown',
-            challenge_type_id: c.challenge_type_id,
-            status: c.status,
-            phase: 'pending_credentials',
-            created_at: c.purchase_date || c.created_at,
-            amount_paid: c.amount_paid
-          };
-        });
-
-      console.log('✅ Admin: Found', pending.length, 'pending challenges needing MT5 credentials');
-      setPendingChallenges(pending);
-      
-      // Log detailed challenge information
+      console.log('✅ Admin: Pending challenges (need MT5 credentials):', pending.length);
       if (pending.length > 0) {
         console.table(pending.map(p => ({
-          id: p.id.slice(0, 8),
-          user: p.user_name,
           email: p.user_email,
           account_size: p.account_size,
           challenge_type: p.challenge_type,
           status: p.status,
           created: new Date(p.created_at).toLocaleDateString()
         })));
-      } else if (challengesData.length > 0) {
-        console.log('ℹ️ No pending challenges found. All challenges have MT5 credentials.');
-      } else {
-        console.info('ℹ️ No challenges found in database. This could mean:\n  1. No users have purchased any challenges yet\n  2. There are issues with database permissions');
+      }
+
+      setPendingChallenges(pending);
+      
+      // Show detailed info if no pending challenges found
+      if (pending.length === 0 && challengesData && challengesData.length > 0) {
+        console.warn('⚠️ No pending challenges found, but there are', challengesData.length, 'total challenges');
+        console.log('📋 All challenge statuses:');
+        console.table(challengesData.map(c => ({ 
+          id: c.id.slice(0, 8), 
+          status: c.status, 
+          has_trading_id: !!c.trading_account_id,
+          account_size: c.account_size,
+          purchase_date: c.purchase_date ? new Date(c.purchase_date).toLocaleDateString() : 'N/A'
+        })));
+      }
+
+      if (challengesData && challengesData.length === 0) {
+        console.info('ℹ️ No challenges found in database. This could mean:\n  1. No users have purchased any challenges yet\n  2. Admin RLS policy is not working (check admin_roles table)');
       }
 
       // Format challenges as "accounts" for display
-      const formattedAccounts = challengesData
-        .filter(c => c.trading_account_id)
-        .map((c: any) => {
-          const user = usersMap.get(c.user_id);
-          const profile = profilesMap.get(c.user_id);
-          const email = user?.email || 'Unknown';
-          const name = profile ? 
-            `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 
-            email.split('@')[0] || 'User';
-          
-          return {
-            account_id: c.id,
-            user_id: c.user_id,
-            mt5_login: c.trading_account_id || 'Not Assigned',
-            mt5_password: c.trading_account_password || 'Not Set',
-            mt5_server: c.server || 'Not Set',
-            account_type: c.challenge_type || 'Standard',
-            account_size: c.account_size || 0,
-            current_balance: c.current_balance || 0,
-            status: c.status || 'active',
-            is_sent: !!c.trading_account_id,
-            created_at: c.purchase_date || c.created_at,
-            user_email: email,
-            user_name: name,
-            unique_user_id: profile?.friendly_id || 'N/A',
-            challenge_id: c.challenge_id,
-            phase: c.phase || 'evaluation',
-            start_date: c.start_date,
-            end_date: c.end_date,
-            profit_target: c.profit_target,
-            max_drawdown: c.max_drawdown,
-            max_daily_loss: c.max_daily_loss,
-            max_total_loss: c.max_total_loss
-          };
-        });
+      const formattedAccounts = challengesData?.filter(c => c.trading_account_id).map((c: any) => {
+        const profile = profilesMap.get(c.user_id);
+        const email = profile?.email || 'Unknown';
+        const name = profile?.full_name || email.split('@')[0] || 'N/A';
+        
+        return {
+          account_id: c.id,
+          user_id: c.user_id,
+          mt5_login: c.trading_account_id || 'Not Assigned',
+          mt5_password: c.trading_account_password || 'Not Set',
+          mt5_server: c.trading_account_server || 'MetaQuotes-Demo',
+          account_type: c.challenge_type_id || 'Standard',
+          account_size: c.account_size,
+          current_balance: 0,
+          status: c.status,
+          is_sent: c.credentials_sent || false,
+          created_at: c.purchase_date,
+          user_email: email,
+          user_name: name,
+          unique_user_id: c.trading_account_id
+        };
+      }) || [];
 
-      // Set accounts with the formatted data
       setAccounts(formattedAccounts);
-      
-      // Set users with their profiles and challenges
-      const usersData = Array.from(usersMap.values()).map(user => ({
-        ...user,
-        ...(profilesMap.get(user.id) || {}),
-        challenges: challengesData.filter((c: any) => c.user_id === user.id)
-      }));
-      
+
+      // Create users list from all unique user_ids in profiles
+      const usersData = Array.from(profilesMap.values());
       setUsers(usersData);
+      
       setLoading(false);
       setError(null);
       
