@@ -202,15 +202,6 @@ export default function CryptoPayment() {
           });
         }
 
-        // Get challenge type ID and details
-        const { data: challengeTypeData, error: challengeTypeError } = await supabase
-          .from('challenge_types')
-          .select('id, challenge_code, name')
-          .eq('challenge_code', challengeType)
-          .maybeSingle();
-
-        console.log('Challenge type lookup:', { challengeType, challengeTypeData, challengeTypeError });
-
         // Validate challengeType before proceeding
         if (!challengeType) {
           console.error('Challenge type is missing!', { 
@@ -222,6 +213,47 @@ export default function CryptoPayment() {
           setVerifying(false);
           return;
         }
+
+        // Get challenge type ID and details - try multiple lookup strategies
+        let challengeTypeData = null;
+        
+        // Strategy 1: Try by challenge_code
+        const { data: dataByCode } = await supabase
+          .from('challenge_types')
+          .select('id, challenge_code, challenge_name, type_name')
+          .eq('challenge_code', challengeType)
+          .maybeSingle();
+        
+        if (dataByCode) {
+          challengeTypeData = dataByCode;
+          console.log('Found challenge by challenge_code:', challengeTypeData);
+        } else {
+          // Strategy 2: Try by type_name (for backward compatibility)
+          // Map ELITE_ROYAL to 'elite' type_name
+          const typeNameMap: Record<string, string> = {
+            'ELITE_ROYAL': 'elite',
+            'CLASSIC_2STEP': 'standard',
+            'RAPID_FIRE': 'rapid',
+            'PAYG_2STEP': 'professional',
+            'AGGRESSIVE_2STEP': 'swing',
+            'SWING_PRO': 'scaling'
+          };
+          
+          const typeName = typeNameMap[challengeType] || challengeType.toLowerCase();
+          
+          const { data: dataByTypeName } = await supabase
+            .from('challenge_types')
+            .select('id, challenge_code, challenge_name, type_name')
+            .eq('type_name', typeName)
+            .maybeSingle();
+          
+          if (dataByTypeName) {
+            challengeTypeData = dataByTypeName;
+            console.log('Found challenge by type_name:', typeName, challengeTypeData);
+          }
+        }
+
+        console.log('Challenge type lookup:', { challengeType, challengeTypeData });
 
         // If challenge type not found in database, this is a critical error
         if (!challengeTypeData) {
