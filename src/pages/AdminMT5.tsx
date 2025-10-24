@@ -201,7 +201,7 @@ export default function AdminMT5() {
       setError(null);
       
       console.log('✅ Data loaded successfully:', {
-        users: allUsers.length,
+        users: usersData.length,
         accounts: formattedAccounts.length,
         pendingChallenges: pending.length,
         totalChallenges: challengesData.length
