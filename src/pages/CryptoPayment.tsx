@@ -223,33 +223,10 @@ export default function CryptoPayment() {
           return;
         }
 
-        // Map challenge codes to valid database challenge_type values
-        // The database challenge_type column has a CHECK constraint with specific allowed values
-        const challengeTypeMapping: { [key: string]: string } = {
-          'ELITE_ROYAL': 'standard',
-          'RAPID_FREE': 'rapid',
-          'SCALING_PRO': 'scaling',
-          'PROFESSIONAL': 'professional',
-          'SWING_TRADER': 'swing',
-          'MASTER_TRADER': 'master',
-          // Fallback mappings
-          'standard': 'standard',
-          'rapid': 'rapid',
-          'scaling': 'scaling',
-          'professional': 'professional',
-          'swing': 'swing',
-          'master': 'master'
-        };
-
-        // Get the mapped challenge type, or use the original if not found
-        const mappedChallengeType = challengeTypeMapping[challengeType] || challengeType.toLowerCase();
-        
-        console.log('Challenge type mapping:', { original: challengeType, mapped: mappedChallengeType });
-
-        // Create user challenge record - include both challenge_type and challenge_type_id for compatibility
+        // Create user challenge record using challenge_type_id only
+        // Don't use challenge_type field to avoid CHECK constraint issues
         const challengeInsertData: any = {
           user_id: user.id,
-          challenge_type: mappedChallengeType, // Use the mapped value
           account_size: accountSize,
           amount_paid: finalPrice,
           payment_id: payment?.id,
@@ -260,12 +237,20 @@ export default function CryptoPayment() {
           phase_2_price: isPayAsYouGo ? phase2Price : null
         };
 
-        console.log('Challenge insert data:', challengeInsertData);
-
-        // Add challenge_type_id if we found it
+        // Add challenge_type_id - this is the primary way to reference the challenge type
         if (challengeTypeData?.id) {
           challengeInsertData.challenge_type_id = challengeTypeData.id;
+          console.log('Using challenge_type_id:', challengeTypeData.id);
+        } else {
+          // If we can't find the challenge type in the database, we can't proceed
+          console.error('Challenge type not found in database:', challengeType);
+          alert('Error: Invalid challenge type. Please contact support.');
+          setVerificationStatus('failed');
+          setVerifying(false);
+          return;
         }
+
+        console.log('Challenge insert data:', challengeInsertData);
 
         const { data: userChallenge, error: userChallengeError } = await supabase
           .from('user_challenges')
