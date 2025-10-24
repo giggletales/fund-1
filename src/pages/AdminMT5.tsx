@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/db';
+import { supabase, oldSupabase } from '../lib/db';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import GradientText from '../components/ui/GradientText';
@@ -37,43 +37,75 @@ export default function AdminMT5() {
 
   const loadData = async () => {
     try {
-      // Fetch user profiles (no admin check required)
-      const { data: profilesData, error: profilesError } = await supabase
+      console.log('🔄 Loading data from BOTH databases...');
+      
+      // ========== NEW DATABASE ==========
+      const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id');
       
-      if (profilesError) {
-        console.error('❌ Error fetching user profiles:', profilesError);
+      if (newProfilesError) {
+        console.error('❌ Error fetching NEW DB user profiles:', newProfilesError);
       }
 
+      const { data: newChallengesData, error: newChallengesError } = await supabase
+        .from('user_challenges')
+        .select('*')
+        .order('purchase_date', { ascending: false });
+
+      if (newChallengesError) {
+        console.error('❌ Error fetching NEW DB challenges:', newChallengesError);
+      }
+
+      console.log('✅ NEW Database: Found', newChallengesData?.length || 0, 'challenges');
+
+      // ========== OLD DATABASE ==========
+      const { data: oldProfilesData, error: oldProfilesError } = await oldSupabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id');
+      
+      if (oldProfilesError) {
+        console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError);
+      }
+
+      const { data: oldChallengesData, error: oldChallengesError } = await oldSupabase
+        .from('user_challenges')
+        .select('*')
+        .order('purchase_date', { ascending: false });
+
+      if (oldChallengesError) {
+        console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError);
+      }
+
+      console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
+
+      // ========== MERGE DATA ==========
+      // Merge profiles from both databases
+      const allProfilesData = [...(newProfilesData || []), ...(oldProfilesData || [])];
+      
       // Create a map of user info by user_id
-      const usersMap = new Map(profilesData?.map((p: any) => [
+      const usersMap = new Map(allProfilesData.map((p: any) => [
         p.user_id, 
         {
           id: p.user_id,
           email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
           full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
         }
-      ]) || []);
+      ]));
 
       // Create profilesMap for friendly_id lookup
-      const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p.friendly_id]) || []);
+      const profilesMap = new Map(allProfilesData.map((p: any) => [p.user_id, p.friendly_id]));
 
-      // Fetch ALL user challenges
-      const { data: challengesData, error: challengesError } = await supabase
-        .from('user_challenges')
-        .select('*')
-        .order('purchase_date', { ascending: false });
+      // Merge challenges from both databases and add source tracking
+      const newChallengesWithSource = (newChallengesData || []).map(c => ({ ...c, _db_source: 'NEW' }));
+      const oldChallengesWithSource = (oldChallengesData || []).map(c => ({ ...c, _db_source: 'OLD' }));
+      const challengesData = [...newChallengesWithSource, ...oldChallengesWithSource];
 
-      if (challengesError) {
-        console.error('❌ Error fetching challenges:', challengesError);
-        if (challengesError.message?.includes('row-level security') || challengesError.code === 'PGRST301') {
-          alert('⚠️ Admin Access Issue\n\nUnable to fetch all challenges. This usually means:\n1. Your account is not in the admin_roles table\n2. RLS policies are blocking access\n\nPlease contact a database administrator.');
-          setLoading(false);
-          return;
-        }
-        throw challengesError;
-      }
+      console.log('📊 MERGED: Total challenges:', challengesData.length);
+      console.log('   - From NEW DB:', newChallengesData?.length || 0);
+      console.log('   - From OLD DB:', oldChallengesData?.length || 0);
+
+      // Error handling already done for individual database queries above
 
       console.log('✅ Admin: Total challenges fetched:', challengesData?.length);
       console.log('📊 Admin: Challenges without trading_account_id:', challengesData?.filter(c => !c.trading_account_id).length);
@@ -658,35 +690,68 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
 
   async function loadPendingChallenges() {
     try {
-      const { data: challenges, error: challengesError } = await supabase
+      console.log('🔄 Loading pending challenges from BOTH databases...');
+      
+      // NEW DATABASE
+      const { data: newChallenges, error: newChallengesError } = await supabase
         .from('user_challenges')
         .select('*')
         .is('trading_account_id', null)
         .neq('status', 'pending_payment')
         .order('purchase_date', { ascending: false });
 
-      if (challengesError) throw challengesError;
+      if (newChallengesError) {
+        console.error('Error loading NEW DB challenges:', newChallengesError);
+      }
 
-      // Get user data from user_profiles
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id');
 
-      if (profilesError) {
-        console.warn('Could not load user profiles:', profilesError);
+      if (newProfilesError) {
+        console.warn('Could not load NEW DB user profiles:', newProfilesError);
       }
 
-      const usersMap = new Map(profilesData?.map((p: any) => [
+      // OLD DATABASE
+      const { data: oldChallenges, error: oldChallengesError } = await oldSupabase
+        .from('user_challenges')
+        .select('*')
+        .is('trading_account_id', null)
+        .neq('status', 'pending_payment')
+        .order('purchase_date', { ascending: false });
+
+      if (oldChallengesError) {
+        console.warn('Error loading OLD DB challenges:', oldChallengesError);
+      }
+
+      const { data: oldProfilesData, error: oldProfilesError } = await oldSupabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id');
+
+      if (oldProfilesError) {
+        console.warn('Could not load OLD DB user profiles:', oldProfilesError);
+      }
+
+      // Merge profiles
+      const allProfilesData = [...(newProfilesData || []), ...(oldProfilesData || [])];
+      const usersMap = new Map(allProfilesData.map((p: any) => [
         p.user_id,
         {
           id: p.user_id,
           email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'Unknown',
           full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
         }
-      ]) || []);
+      ]));
+
+      // Merge challenges and add source tracking
+      const newChallengesWithSource = (newChallenges || []).map(c => ({ ...c, _db_source: 'NEW' }));
+      const oldChallengesWithSource = (oldChallenges || []).map(c => ({ ...c, _db_source: 'OLD' }));
+      const allChallenges = [...newChallengesWithSource, ...oldChallengesWithSource];
+
+      console.log('✅ Pending challenges - NEW DB:', newChallenges?.length || 0, '| OLD DB:', oldChallenges?.length || 0);
 
       // Merge user data with challenges
-      const enrichedChallenges = challenges?.map(challenge => {
+      const enrichedChallenges = allChallenges.map(challenge => {
         const user = usersMap.get(challenge.user_id);
         return {
           ...challenge,
@@ -695,7 +760,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
             full_name: user?.full_name || 'N/A'
           }
         };
-      }) || [];
+      });
 
       setPendingChallenges(enrichedChallenges);
     } catch (error) {
@@ -732,8 +797,14 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
     setCreating(true);
 
     try {
+      // Determine which database to use based on challenge source
+      const dbClient = selectedChallenge._db_source === 'OLD' ? oldSupabase : supabase;
+      const dbName = selectedChallenge._db_source === 'OLD' ? 'OLD DB' : 'NEW DB';
+      
+      console.log(`💾 Assigning credentials to ${dbName}...`);
+
       // Update the selected challenge with MT5 credentials
-      const { error: updateError } = await supabase
+      const { error: updateError } = await dbClient
         .from('user_challenges')
         .update({
           trading_account_id: formData.mt5_login,
@@ -744,11 +815,16 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
         })
         .eq('id', selectedChallenge.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error(`❌ Error updating ${dbName}:`, updateError);
+        throw updateError;
+      }
+
+      console.log(`✅ Credentials assigned successfully in ${dbName}`);
 
       // Generate purchase certificate when credentials are assigned
       try {
-        const { error: certError } = await supabase
+        const { error: certError } = await dbClient
           .from('downloads')
           .insert({
             user_id: selectedChallenge.user_id,
@@ -765,16 +841,20 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
             download_count: 0
           });
 
-        if (certError) console.error('Error generating certificate:', certError);
+        if (certError) {
+          console.warn('Error generating certificate:', certError);
+        } else {
+          console.log('✅ Certificate generated');
+        }
       } catch (certError) {
         console.error('Certificate generation error:', certError);
       }
 
-      alert('MT5 credentials assigned successfully!');
+      alert(`✅ MT5 credentials assigned successfully in ${dbName}!`);
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning credentials:', error);
-      alert('Failed to assign credentials');
+      alert(`❌ Failed to assign credentials: ${error.message || 'Unknown error'}`);
     } finally {
       setCreating(false);
     }
@@ -812,7 +892,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
                 <option value="">-- Select Challenge --</option>
                 {pendingChallenges.map((challenge: any) => (
                   <option key={challenge.id} value={challenge.id} className="bg-deep-space">
-                    {challenge.users?.email} - ${parseFloat(challenge.account_size).toLocaleString()} - {challenge.challenge_type_id}
+                    [{challenge._db_source}] {challenge.users?.email} - ${parseFloat(challenge.account_size).toLocaleString()} - {challenge.challenge_type_id}
                   </option>
                 ))}
               </select>
@@ -966,21 +1046,7 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
         };
       });
 
-      // OLD DATABASE - Create separate Supabase client with unique storage key
-      const { createClient } = await import('@supabase/supabase-js');
-      const oldSupabase = createClient(
-        'https://mvgcwqmsawopumuksqmz.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc',
-        {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-            storageKey: 'supabase-old-db'
-          }
-        }
-      );
-
+      // OLD DATABASE
       const { data: oldChallenges } = await oldSupabase
         .from('user_challenges')
         .select('user_id, created_at')

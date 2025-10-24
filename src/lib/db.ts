@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+// NEW DATABASE (Primary)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -13,6 +14,19 @@ if (!supabaseUrl || !supabaseKey) {
 export const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null;
+
+// OLD DATABASE (Legacy - for migration)
+const oldSupabaseUrl = 'https://mvgcwqmsawopumuksqmz.supabase.co';
+const oldSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc';
+
+export const oldSupabase = createClient(oldSupabaseUrl, oldSupabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storageKey: 'supabase-old-db'
+  }
+});
 
 export const db = {
   query: async (text: string, params?: any[]) => {

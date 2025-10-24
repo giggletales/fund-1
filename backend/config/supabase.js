@@ -31,3 +31,17 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: false
   }
 });
+
+// OLD DATABASE (Legacy - for migration)
+const oldSupabaseUrl = 'https://mvgcwqmsawopumuksqmz.supabase.co';
+const oldSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc';
+
+export const oldSupabase = createClient(oldSupabaseUrl, oldSupabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    storageKey: 'supabase-old-db'
+  }
+});
+
+console.log('✅ Dual database configuration loaded (NEW + OLD)');
