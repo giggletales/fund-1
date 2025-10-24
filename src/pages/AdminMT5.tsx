@@ -210,7 +210,6 @@ export default function AdminMT5() {
       console.error('❌ Error loading data:', error);
       setError(error.message || 'Failed to load data. Please check console for details.');
       setLoading(false);
-    }  setLoading(false);
     }
   };
 
