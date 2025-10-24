@@ -37,26 +37,24 @@ export default function AdminMT5() {
 
   const loadData = async () => {
     try {
-      // Fetch user data
-      const { data: usersData, error: usersError } = await supabase.rpc('get_users_for_admin');
-      if (usersError) {
-        console.error('❌ Admin access error:', usersError);
-        if (usersError.message?.includes('Admin privileges required') || usersError.message?.includes('Access denied')) {
-          alert('⚠️ Admin Access Required\n\nYou do not have admin privileges. Please ensure your account is added to the admin_roles table in the database.');
-          setLoading(false);
-          return;
-        }
-        throw usersError;
+      // Fetch user profiles (no admin check required)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id');
+      
+      if (profilesError) {
+        console.error('❌ Error fetching user profiles:', profilesError);
       }
 
-      const usersMap = new Map(usersData?.map((u: any) => [u.id, u]) || []);
-
-      // Fetch user profiles to get friendly_id
-      const { data: profilesData } = await supabase
-        .from('user_profiles')
-        .select('user_id, friendly_id');
-
-      const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p.friendly_id]) || []);
+      // Create a map of user info by user_id
+      const usersMap = new Map(profilesData?.map((p: any) => [
+        p.user_id, 
+        {
+          id: p.user_id,
+          email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
+          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
+        }
+      ]) || []);
 
       // Fetch ALL user challenges
       const { data: challengesData, error: challengesError } = await supabase
