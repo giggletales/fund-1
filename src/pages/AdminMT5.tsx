@@ -929,6 +929,8 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
 
       if (error) throw error;
 
+      console.log('📊 SearchableUserDropdown: Loaded profiles:', profilesData?.length);
+      
       const formattedUsers = profilesData?.map((p: any) => ({
         id: p.user_id,
         email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
@@ -937,10 +939,11 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
         created_at: p.created_at
       })) || [];
 
+      console.log('✅ SearchableUserDropdown: Formatted users:', formattedUsers.length);
       setUsers(formattedUsers);
       setFilteredUsers(formattedUsers);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('❌ SearchableUserDropdown: Error loading users:', error);
     } finally {
       setLoading(false);
     }
@@ -1667,9 +1670,10 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
         </div>
       )}
 
-      {selectedAccount ? (
-        <div className="glass-card p-8">
-          <h3 className="text-xl font-bold mb-6">Selected Account</h3>
+      {selectedUser && (
+        selectedAccount ? (
+          <div className="glass-card p-8">
+            <h3 className="text-xl font-bold mb-6">Selected Account</h3>
 
           <div className="bg-white/5 rounded-lg p-6 mb-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1712,12 +1716,13 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
             </button>
           </div>
         </div>
-      ) : (
-        <div className="glass-card p-12 text-center">
-          <AlertTriangle size={64} className="mx-auto mb-4 text-white/30" />
-          <h3 className="text-xl font-bold mb-2">No Account Selected</h3>
-          <p className="text-white/60">Search for an account to manually breach it</p>
-        </div>
+        ) : (
+          <div className="glass-card p-12 text-center">
+            <AlertTriangle size={64} className="mx-auto mb-4 text-white/30" />
+            <h3 className="text-xl font-bold mb-2">No Account Selected</h3>
+            <p className="text-white/60">Search for an account to manually breach it</p>
+          </div>
+        )
       )}
     </div>
   );
