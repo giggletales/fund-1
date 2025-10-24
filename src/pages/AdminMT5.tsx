@@ -966,11 +966,19 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
         };
       });
 
-      // OLD DATABASE - Create separate Supabase client
+      // OLD DATABASE - Create separate Supabase client with unique storage key
       const { createClient } = await import('@supabase/supabase-js');
       const oldSupabase = createClient(
         'https://mvgcwqmsawopumuksqmz.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc',
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'supabase-old-db'
+          }
+        }
       );
 
       const { data: oldChallenges } = await oldSupabase
