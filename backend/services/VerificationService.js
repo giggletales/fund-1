@@ -11,18 +11,12 @@ class VerificationService {
       const code = this.generateCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-<<<<<<< HEAD
-      const { data: existing } = await supabase
-=======
       const { data: existing, error: fetchError } = await supabase
->>>>>>> email-verification
         .from('email_verifications')
         .select('*')
         .eq('email', email)
         .single();
 
-<<<<<<< HEAD
-=======
       // Ignore "not found" errors for single()
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Database error fetching existing verification:', fetchError);
@@ -38,7 +32,6 @@ class VerificationService {
         };
       }
 
->>>>>>> email-verification
       if (existing?.is_verified) {
         return { success: true, alreadyVerified: true, message: 'Email already verified' };
       }
@@ -51,20 +44,6 @@ class VerificationService {
         updated_at: new Date().toISOString()
       };
 
-<<<<<<< HEAD
-      const { error } = await supabase
-        .from('email_verifications')
-        .upsert(upsertData, { onConflict: 'email' });
-
-      if (error) throw error;
-
-      await emailService.sendVerificationEmail(email, code);
-
-      return { success: true, message: 'Verification code sent to email', expiresAt };
-    } catch (error) {
-      console.error('Error creating verification code:', error);
-      throw error;
-=======
       const { error: upsertError } = await supabase
         .from('email_verifications')
         .upsert(upsertData, { onConflict: 'email' });
@@ -117,24 +96,17 @@ class VerificationService {
         success: false, 
         message: 'An unexpected error occurred. Please try again.' 
       };
->>>>>>> email-verification
     }
   }
 
   async verifyCode(email, code) {
     try {
-<<<<<<< HEAD
-      const { data: verification } = await supabase
-=======
       const { data: verification, error: fetchError } = await supabase
->>>>>>> email-verification
         .from('email_verifications')
         .select('*')
         .eq('email', email)
         .single();
 
-<<<<<<< HEAD
-=======
       if (fetchError) {
         console.error('Database error fetching verification:', fetchError);
         if (fetchError.code === '42P01') {
@@ -149,7 +121,6 @@ class VerificationService {
         };
       }
 
->>>>>>> email-verification
       if (!verification) {
         return { success: false, message: 'No verification code found for this email' };
       }
@@ -167,20 +138,11 @@ class VerificationService {
       }
 
       if (verification.verification_code === code) {
-<<<<<<< HEAD
-        await supabase
-=======
         const { error: updateError } = await supabase
->>>>>>> email-verification
           .from('email_verifications')
           .update({ is_verified: true, verified_at: new Date().toISOString() })
           .eq('email', email);
 
-<<<<<<< HEAD
-        return { success: true, message: 'Email verified successfully!' };
-      } else {
-        await supabase
-=======
         if (updateError) {
           console.error('Error updating verification status:', updateError);
           return { success: false, message: 'Failed to update verification status.' };
@@ -189,30 +151,22 @@ class VerificationService {
         return { success: true, message: 'Email verified successfully!' };
       } else {
         const { error: updateError } = await supabase
->>>>>>> email-verification
           .from('email_verifications')
           .update({ attempts: verification.attempts + 1 })
           .eq('email', email);
 
-<<<<<<< HEAD
-=======
         if (updateError) {
           console.error('Error updating attempts:', updateError);
         }
 
->>>>>>> email-verification
         return { success: false, message: `Invalid verification code. ${5 - (verification.attempts + 1)} attempts remaining.` };
       }
     } catch (error) {
       console.error('Error verifying code:', error);
-<<<<<<< HEAD
-      throw error;
-=======
       return { 
         success: false, 
         message: 'An unexpected error occurred. Please try again.' 
       };
->>>>>>> email-verification
     }
   }
 
@@ -232,18 +186,12 @@ class VerificationService {
 
   async resendCode(email) {
     try {
-<<<<<<< HEAD
-      const { data: existing } = await supabase
-=======
       const { data: existing, error: fetchError } = await supabase
->>>>>>> email-verification
         .from('email_verifications')
         .select('*')
         .eq('email', email)
         .single();
 
-<<<<<<< HEAD
-=======
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Database error fetching verification:', fetchError);
         if (fetchError.code === '42P01') {
@@ -258,7 +206,6 @@ class VerificationService {
         };
       }
 
->>>>>>> email-verification
       if (!existing) {
         return { success: false, message: 'No verification request found for this email' };
       }
@@ -277,14 +224,10 @@ class VerificationService {
       return await this.createVerificationCode(email);
     } catch (error) {
       console.error('Error resending code:', error);
-<<<<<<< HEAD
-      throw error;
-=======
       return { 
         success: false, 
         message: 'An unexpected error occurred. Please try again.' 
       };
->>>>>>> email-verification
     }
   }
 }

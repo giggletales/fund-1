@@ -92,16 +92,6 @@ router.post('/verify-code', async (req, res) => {
     const { email, code } = req.body;
 
     if (!email || !code) {
-<<<<<<< HEAD
-      return res.status(400).json({ success: false, error: 'Email and code are required' });
-    }
-
-    const result = await verificationService.verifyCode(email, code);
-    res.json(result);
-  } catch (error) {
-    console.error('Error verifying code:', error);
-    res.status(500).json({ success: false, error: error.message });
-=======
       return res.status(400).json({ success: false, message: 'Email and code are required' });
     }
 
@@ -129,7 +119,6 @@ router.post('/verify-code', async (req, res) => {
       message: 'Failed to verify code. Please try again.',
       error: error.message 
     });
->>>>>>> email-verification
   }
 });
 
@@ -145,8 +134,6 @@ router.get('/status/:email', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
 // Send welcome email (no verification)
 router.post('/send-welcome-email', async (req, res) => {
   try {
@@ -183,23 +170,12 @@ router.post('/send-welcome-email', async (req, res) => {
   }
 });
 
->>>>>>> email-verification
 // Resend verification code
 router.post('/resend-code', async (req, res) => {
   try {
     const { email } = req.body;
 
     if (!email) {
-<<<<<<< HEAD
-      return res.status(400).json({ success: false, error: 'Email is required' });
-    }
-
-    const result = await verificationService.resendCode(email);
-    res.json(result);
-  } catch (error) {
-    console.error('Error resending verification code:', error);
-    res.status(500).json({ success: false, error: error.message });
-=======
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
@@ -214,7 +190,6 @@ router.post('/resend-code', async (req, res) => {
       message: 'Failed to resend code. Please try again.',
       error: error.message 
     });
->>>>>>> email-verification
   }
 });
 

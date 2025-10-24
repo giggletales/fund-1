@@ -3,11 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-<<<<<<< HEAD
-=======
 import path from 'path';
 import { fileURLToPath } from 'url';
->>>>>>> email-verification
 
 import accountsRoutes from './routes/accounts.js';
 import leaderboardRoutes from './routes/leaderboard.js';
@@ -17,11 +14,6 @@ import notificationsRoutes from './routes/notifications.js';
 import supportRoutes from './routes/support.js';
 import challengesRoutes from './routes/challenges.js';
 import analyticsRoutes from './routes/analytics.js';
-<<<<<<< HEAD
-import verificationRoutes from './routes/verification.js';
-
-dotenv.config();
-=======
 import verificationRoutes from './routes/Verification.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +22,6 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from both root and backend directories
 dotenv.config({ path: path.join(__dirname, '../.env') }); // Root .env
 dotenv.config({ path: path.join(__dirname, '.env') }); // Backend .env (overrides root)
->>>>>>> email-verification
 
 // Import monitoring service with error handling
 let monitoringService = null;
@@ -57,11 +48,6 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 
-<<<<<<< HEAD
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-=======
 // More lenient rate limiter for verification endpoints
 const verificationLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -99,20 +85,16 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
->>>>>>> email-verification
 }));
 
 app.use(express.json());
 app.use(cookieParser());
-<<<<<<< HEAD
-=======
 
 // Apply verification rate limiter to verification endpoints
 // Temporarily disabled for testing - re-enable in production
 // app.use('/api/verification', verificationLimiter);
 
 // Apply general rate limiter to all other API endpoints
->>>>>>> email-verification
 app.use('/api/', limiter);
 
 app.use('/api/accounts', accountsRoutes);
@@ -167,23 +149,16 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     app.listen(PORT, () => {
-<<<<<<< HEAD
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`✅ Server ready for requests`);
-=======
-       console.log('\n' + '='.repeat(60));
- console.log('🚀 Fund8r Backend Server');
- console.log('='.repeat(60));
- console.log(`📡 Port: ${PORT}`);
+      console.log('\n' + '='.repeat(60));
+      console.log('🚀 Fund8r Backend Server');
+      console.log('='.repeat(60));
+      console.log(`📡 Port: ${PORT}`);
       console.log(`📊 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
       console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️ Database: ${process.env.SUPABASE_URL ? 'Supabase Connected' : 'Not Configured'}`);
- console.log(`📧 Email: ${process.env.SMTP_HOST ? 'SMTP Configured' : 'Not Configured (emails will log to console)'}`);
- console.log('='.repeat(60));
- console.log('✅ Server ready for requests\n');
->>>>>>> email-verification
+      console.log(`📧 Email: ${process.env.SMTP_HOST ? 'SMTP Configured' : 'Not Configured (emails will log to console)'}`);
+      console.log('='.repeat(60));
+      console.log('✅ Server ready for requests\n');
     });
   } catch (error) {
     console.error('Failed to start server:', error);

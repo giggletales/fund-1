@@ -221,8 +221,6 @@ router.get('/challenge/:challengeId/stats', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
 // Coupon validation endpoint
 router.post('/coupons/validate', async (req, res) => {
   try {
@@ -290,5 +288,4 @@ router.post('/coupons/increment-usage', async (req, res) => {
   }
 });
 
->>>>>>> email-verification
 export default router;

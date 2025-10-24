@@ -1,15 +1,7 @@
-<<<<<<< HEAD
-import emailService from './services/emailService.js';
-=======
->>>>>>> email-verification
 import dotenv from 'dotenv';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
-<<<<<<< HEAD
-
-dotenv.config();
-=======
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +16,6 @@ const { default: emailService } = await import('./services/emailService.js');
 
 // Reinitialize to pick up env variables
 emailService.reinitialize();
->>>>>>> email-verification
 
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -43,11 +34,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // Check environment variables
 function checkEnvVars() {
   console.log('\n🔍 Checking environment variables...');
-<<<<<<< HEAD
-  const required = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
-=======
   const required = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD'];
->>>>>>> email-verification
   const missing = [];
   
   required.forEach(key => {
@@ -61,22 +48,11 @@ function checkEnvVars() {
   
   if (missing.length > 0) {
     console.error('\n❌ Missing required environment variables:', missing.join(', '));
-<<<<<<< HEAD
-    console.log('\n� Add these to your backend/.env file:');
-    console.log('SMTP_HOST=smtp.gmail.com');
-    console.log('SMTP_PORT=587');
-    console.log('SMTP_USER=your-email@gmail.com');
-    console.log('SMTP_PASS=your-app-password');
-    console.log('SUPABASE_URL=your-supabase-url');
-    console.log('SUPABASE_ANON_KEY=your-supabase-anon-key');
-    console.log('COMPANY_NAME=Fund8r');
-=======
     console.log('\n📝 Add these to your .env file (in root directory):');
     console.log('SMTP_HOST=smtp.gmail.com');
     console.log('SMTP_PORT=587');
     console.log('SMTP_USER=your-email@gmail.com');
     console.log('SMTP_PASSWORD=your-app-password');
->>>>>>> email-verification
     console.log('\n📌 For Gmail, you need an App Password:');
     console.log('https://myaccount.google.com/apppasswords');
     return false;

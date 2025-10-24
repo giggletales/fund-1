@@ -1,14 +1,8 @@
 import { supabase } from './db';
 import { sendWelcomeEmail } from '../services/emailService';
 
-<<<<<<< HEAD
-=======
-// API URL configuration
-// In development: uses Vite proxy (/api -> http://localhost:5000)
-// In production: must set VITE_API_URL environment variable
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://fund-backend-pbde.onrender.com/api');
+const API_URL = import.meta.env.VITE_API_URL || 'https://fund-backend-pbde.onrender.com/api';
 
->>>>>>> email-verification
 export async function getCurrentUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
@@ -34,14 +28,11 @@ export async function signUp(email: string, password: string, firstName: string,
     }
   });
 
-<<<<<<< HEAD
-=======
   // Check if user already exists
   if (error?.message?.includes('already registered')) {
     return { success: false, error: 'User already exists. Please login instead.' };
   }
 
->>>>>>> email-verification
   if (error || !data.user) {
     return { success: false, error: error?.message || 'Signup failed' };
   }
@@ -64,12 +55,6 @@ export async function signUp(email: string, password: string, firstName: string,
     console.error('Error creating user profile:', profileError);
   }
 
-<<<<<<< HEAD
-  // Send welcome email (don't block signup if email fails)
-  sendWelcomeEmail(email, firstName).catch(error => {
-    console.error('Failed to send welcome email:', error);
-  });
-=======
   // Send verification code via backend API
   try {
     const response = await fetch(`${API_URL}/verification/send-code`, {
@@ -94,7 +79,6 @@ export async function signUp(email: string, password: string, firstName: string,
     console.error('Error sending verification code:', error);
     return { success: false, error: 'Error sending confirmation email' };
   }
->>>>>>> email-verification
 
   return { success: true, user: data.user };
 }

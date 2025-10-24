@@ -8,17 +8,6 @@ dotenv.config();
 
 class EmailService {
   constructor() {
-<<<<<<< HEAD
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-=======
     // Initialize transporter as null, will be created on first use
     this.transporter = null;
     this.isConfigured = false;
@@ -59,7 +48,6 @@ class EmailService {
   reinitialize() {
     this.initializeTransporter();
     return this.isConfigured;
->>>>>>> email-verification
     
     // Ensure certificates directory exists
     this.certsDir = path.join(process.cwd(), 'public', 'certificates');
@@ -70,8 +58,6 @@ class EmailService {
 
   async sendEmail(to, subject, html) {
     try {
-<<<<<<< HEAD
-=======
       if (!this.isConfigured || !this.transporter) {
         console.log('\n' + '='.repeat(60));
         console.log('📧 EMAIL SIMULATION (SMTP not configured)');
@@ -82,7 +68,6 @@ class EmailService {
         return; // Don't throw error, just log
       }
       
->>>>>>> email-verification
       await this.transporter.sendMail({
         from: `"${process.env.COMPANY_NAME}" <${process.env.SMTP_USER}>`,
         to,
@@ -98,8 +83,6 @@ class EmailService {
 
   async sendVerificationEmail(email, code) {
     try {
-<<<<<<< HEAD
-=======
       if (!this.isConfigured || !this.transporter) {
         console.error('\n' + '='.repeat(60));
         console.error('❌ SMTP NOT CONFIGURED - Cannot send verification email');
@@ -116,7 +99,6 @@ class EmailService {
         throw new Error('SMTP not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD environment variables.');
       }
       
->>>>>>> email-verification
       const subject = `🔐 Verify Your Email - ${process.env.COMPANY_NAME || 'Fund8r'}`;
       const html = `
         <!DOCTYPE html>
@@ -290,8 +272,6 @@ class EmailService {
 
   async sendWelcomeEmail(user) {
     try {
-<<<<<<< HEAD
-=======
       if (!this.isConfigured || !this.transporter) {
         console.log('\n' + '='.repeat(60));
         console.log('📧 WELCOME EMAIL SIMULATION (SMTP not configured)');
@@ -302,7 +282,6 @@ class EmailService {
         return; // Don't throw error, just log
       }
       
->>>>>>> email-verification
       const subject = `🚀 Welcome to ${process.env.COMPANY_NAME || 'Fund8r'} - Your Trading Journey Begins!`;
     const html = `
       <!DOCTYPE html>

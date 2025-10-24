@@ -5,14 +5,6 @@ import { supabase } from '../lib/db';
 import { Copy, Check, Loader, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import GradientText from '../components/ui/GradientText';
 
-<<<<<<< HEAD
-=======
-// API URL configuration
-// In development: uses Vite proxy (/api -> http://localhost:5000)
-// In production: must set VITE_API_URL environment variable
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'https://fund-backend-pbde.onrender.com/api');
-
->>>>>>> email-verification
 const WALLETS = {
   ETH: '0x461bBf1B66978fE97B1A2bcEc52FbaB6aEDDF256',
   SOL: 'GZGsfmqx6bAYdXiVQs3QYfPFPjyfQggaMtBp5qm5R7r3'
@@ -22,6 +14,8 @@ const API_KEYS = {
   ETHERSCAN: 'R4ME8GMBMNT47DYT6E8E3ZQWA9NYXISBHR',
   SOLSCAN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NTU4NjQ1OTM3MDYsImVtYWlsIjoidHJhZGVycmVkZ2Vwcm9AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYyIiwiaWF0IjoxNzU1ODY0NTkzfQ.r01wCcgg5IHtPqyFVyllfo2YZcyP55Cc6szaQuHre9c'
 };
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://fund-backend-pbde.onrender.com/api';
 
 export default function CryptoPayment() {
   const navigate = useNavigate();
@@ -92,20 +86,6 @@ export default function CryptoPayment() {
     if (!couponCode.trim()) return;
 
     try {
-<<<<<<< HEAD
-      const { data, error } = await supabase.rpc('validate_coupon', {
-        coupon_code: couponCode.toUpperCase(),
-        challenge_type: challengeType
-      });
-
-      if (error) throw error;
-
-      if (data.valid) {
-        setAppliedCoupon(data);
-        setCouponError('');
-      } else {
-        setCouponError(data.message || 'Invalid coupon');
-=======
       // Use backend API instead of direct Supabase call
       const response = await fetch(`${API_URL}/challenges/coupons/validate`, {
         method: 'POST',
@@ -123,7 +103,6 @@ export default function CryptoPayment() {
         setCouponError('');
       } else {
         setCouponError(result.data?.message || result.error || 'Invalid coupon');
->>>>>>> email-verification
         setAppliedCoupon(null);
       }
     } catch (error: any) {
@@ -138,15 +117,6 @@ export default function CryptoPayment() {
     setCouponError('');
   };
 
-<<<<<<< HEAD
-  // Use regularPrice if available, otherwise calculate from discountPrice
-  const fullPrice = regularPrice || (discountPrice ? discountPrice * 2 : originalPrice * 2);
-  const basePrice = discountPrice || originalPrice;
-  
-  // Apply additional coupon discount if available
-  const couponDiscountedPrice = appliedCoupon
-    ? basePrice * (1 - appliedCoupon.discount_percent / 100)
-=======
   // The discountPrice is the actual price from the purchase button (already includes base discount)
   const basePrice = discountPrice || originalPrice;
   const fullPrice = regularPrice || (basePrice * 2); // Original price before any discounts
@@ -156,7 +126,6 @@ export default function CryptoPayment() {
     ? appliedCoupon.discount_percent === 100
       ? 0 // Freetrial100 makes it completely free
       : basePrice * (1 - appliedCoupon.discount_percent / 100)
->>>>>>> email-verification
     : basePrice;
 
   const finalPrice = couponDiscountedPrice;
@@ -214,17 +183,12 @@ export default function CryptoPayment() {
         if (error) throw error;
 
         if (appliedCoupon) {
-<<<<<<< HEAD
-          await supabase.rpc('increment_coupon_usage', {
-            coupon_code: couponCode.toUpperCase()
-=======
-           await fetch(`${API_URL}/challenges/coupons/increment-usage`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- coupon_code: couponCode.toUpperCase()
- })
->>>>>>> email-verification
+          await fetch(`${API_URL}/challenges/coupons/increment-usage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              coupon_code: couponCode.toUpperCase()
+            })
           });
         }
 
@@ -489,11 +453,7 @@ export default function CryptoPayment() {
                     <GradientText>${finalPrice.toFixed(2)}</GradientText>
                   </p>
                   <p className="text-xs text-neon-green mt-1">
-<<<<<<< HEAD
-                    50% Base + {appliedCoupon.discount_percent}% Coupon = {Math.round(50 + (appliedCoupon.discount_percent * 0.5))}% Total OFF!
-=======
                     {appliedCoupon.discount_percent}% OFF (Coupon Discount)
->>>>>>> email-verification
                   </p>
                 </>
               )}
@@ -535,15 +495,6 @@ export default function CryptoPayment() {
               <p className="text-red-500 text-sm mt-2">{couponError}</p>
             )}
             {appliedCoupon && (
-<<<<<<< HEAD
-              <p className="text-neon-green text-sm mt-2">
-                ✓ {appliedCoupon.discount_percent}% discount applied! Only one coupon can be used per purchase.
-              </p>
-            )}
-            {!appliedCoupon && (
-              <p className="text-xs text-gray-500 mt-2">
-                Try: LAUNCH50 for 50% off
-=======
               <div className="bg-neon-green/5 border border-neon-green/30 rounded p-2 mt-2">
                 <p className="text-neon-green text-sm font-semibold">
                   ✓ Coupon Applied: {couponCode.toUpperCase()}
@@ -556,7 +507,6 @@ export default function CryptoPayment() {
             {!appliedCoupon && (
               <p className="text-xs text-gray-500 mt-2">
                 Have a coupon code? Enter it above • Only one coupon per purchase
->>>>>>> email-verification
               </p>
             )}
           </div>
