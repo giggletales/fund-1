@@ -1720,7 +1720,7 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
             </div>
           )}
             </div>
-          )
+          )}
         </div>
       )}
 
