@@ -62,28 +62,46 @@ export default function Signup() {
 
     if (result.success) {
       console.log('State check:', { returnTo, accountSize, challengeType, originalPrice });
+      console.log('Verification sent:', result.verificationSent);
 
-      // Store email for verification page
-      localStorage.setItem('verificationEmail', formData.email);
+      // If verification email was sent, go to verification page
+      if (result.verificationSent) {
+        // Store email for verification page
+        localStorage.setItem('verificationEmail', formData.email);
 
-      // If there's a pending payment, store it for after verification
-      if (returnTo && accountSize && challengeType && originalPrice !== undefined) {
-        console.log('Storing pending payment data');
-        localStorage.setItem('pendingPayment', JSON.stringify({
-          accountSize,
-          challengeType,
-          originalPrice,
-          isPayAsYouGo,
-          phase2Price
-        }));
+        // If there's a pending payment, store it for after verification
+        if (returnTo && accountSize && challengeType && originalPrice !== undefined) {
+          console.log('Storing pending payment data');
+          localStorage.setItem('pendingPayment', JSON.stringify({
+            accountSize,
+            challengeType,
+            originalPrice,
+            isPayAsYouGo,
+            phase2Price
+          }));
+        }
+
+        // Redirect to email verification
+        console.log('Redirecting to email verification');
+        navigate('/email-verification', { 
+          state: { email: formData.email },
+          replace: true 
+        });
+      } else {
+        // Verification email not sent - skip verification and go directly to next page
+        console.log('⚠️ Verification email not sent, skipping verification page');
+        
+        if (returnTo && accountSize && challengeType && originalPrice !== undefined) {
+          // Go directly to payment
+          console.log('Navigating to payment page');
+          const paymentUrl = `/payment?accountSize=${accountSize}&challengeType=${encodeURIComponent(challengeType)}&originalPrice=${originalPrice}${isPayAsYouGo ? `&isPayAsYouGo=true&phase2Price=${phase2Price}` : ''}`;
+          window.location.href = paymentUrl;
+        } else {
+          // Go to dashboard
+          console.log('Navigating to dashboard');
+          window.location.href = '/dashboard';
+        }
       }
-
-      // Always redirect to email verification after signup
-      console.log('Redirecting to email verification');
-      navigate('/email-verification', { 
-        state: { email: formData.email },
-        replace: true 
-      });
     } else {
       setError(result.error || 'Registration failed');
       setLoading(false);

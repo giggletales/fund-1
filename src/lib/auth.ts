@@ -55,9 +55,10 @@ export async function signUp(email: string, password: string, firstName: string,
     console.error('Error creating user profile:', profileError);
   }
 
-  // Send verification code via backend API
+  // Send verification code via backend API (optional - don't fail signup if this fails)
+  let verificationSent = false;
   try {
-    console.log('Sending verification code to:', email);
+    console.log('Attempting to send verification code to:', email);
     console.log('API URL:', `${API_URL}/verification/send-code`);
     
     const response = await fetch(`${API_URL}/verification/send-code`, {
@@ -73,45 +74,37 @@ export async function signUp(email: string, password: string, firstName: string,
     
     console.log('Verification API response status:', response.status);
     
-    if (!response.ok) {
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Verification API result:', result);
+      
+      if (result.success) {
+        console.log('✅ Verification code sent successfully');
+        verificationSent = true;
+      } else {
+        console.warn('⚠️ Verification code not sent:', result.message || result.error);
+        // Don't fail signup - just log the issue
+      }
+    } else {
       const errorText = await response.text();
-      console.error('Verification email request failed:', {
+      console.warn('⚠️ Verification email request failed:', {
         status: response.status,
         statusText: response.statusText,
         body: errorText
       });
-      return { 
-        success: false, 
-        error: `Failed to send verification email (${response.status}). Please try again.` 
-      };
+      // Don't fail signup - just log the issue
     }
-    
-    const result = await response.json();
-    console.log('Verification API result:', result);
-    
-    if (!result.success) {
-      console.warn('Failed to send verification code:', result.message || result.error);
-      return { 
-        success: false, 
-        error: result.message || 'Failed to send verification email' 
-      };
-    }
-    
-    console.log('✅ Verification code sent successfully');
   } catch (error: any) {
-    console.error('Error sending verification code:', error);
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
-    });
-    return { 
-      success: false, 
-      error: `Network error: ${error.message}. Please check your connection and try again.` 
-    };
+    console.warn('⚠️ Error sending verification code (non-critical):', error.message);
+    // Don't fail signup - email verification is optional
   }
 
-  return { success: true, user: data.user };
+  // Return success regardless of verification email status
+  return { 
+    success: true, 
+    user: data.user,
+    verificationSent // Let the UI know if verification was sent
+  };
 }
 
 export async function signIn(email: string, password: string) {
