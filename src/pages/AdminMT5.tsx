@@ -934,51 +934,36 @@ function SearchableUserDropdown({ onSelect, selectedUser }: { onSelect: (user: a
 
   async function loadUsers() {
     try {
-      // Try to fetch from user_profiles first
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id, created_at')
+      // Get unique users from user_challenges (most reliable source)
+      const { data: challengesData, error: challengesError } = await supabase
+        .from('user_challenges')
+        .select('user_id, created_at')
         .order('created_at', { ascending: false });
 
-      console.log('📊 SearchableUserDropdown: Loaded profiles:', profilesData?.length);
-      console.log('📊 SearchableUserDropdown: Error:', profilesError);
+      if (challengesError) throw challengesError;
 
-      if (profilesError) {
-        console.warn('⚠️ Could not load from user_profiles, trying user_challenges...');
-        
-        // Fallback: Get unique users from user_challenges
-        const { data: challengesData, error: challengesError } = await supabase
-          .from('user_challenges')
-          .select('user_id, created_at')
-          .order('created_at', { ascending: false });
+      // Get unique user IDs
+      const uniqueUserIds = [...new Set(challengesData?.map(c => c.user_id))];
+      console.log('📊 SearchableUserDropdown: Found unique users from challenges:', uniqueUserIds.length);
 
-        if (challengesError) throw challengesError;
+      // Try to get user_profiles for those users
+      const { data: profilesData } = await supabase
+        .from('user_profiles')
+        .select('user_id, first_name, last_name, friendly_id')
+        .in('user_id', uniqueUserIds);
 
-        // Get unique user IDs
-        const uniqueUserIds = [...new Set(challengesData?.map(c => c.user_id))];
-        console.log('📊 SearchableUserDropdown: Found unique users from challenges:', uniqueUserIds.length);
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
 
-        const formattedUsers = uniqueUserIds.map((userId, index) => ({
+      const formattedUsers = uniqueUserIds.map((userId, index) => {
+        const profile = profilesMap.get(userId);
+        return {
           id: userId,
-          email: `User ${index + 1}`,
-          full_name: `User ${index + 1}`,
-          friendly_id: userId.slice(0, 8),
-          created_at: new Date().toISOString()
-        }));
-
-        console.log('✅ SearchableUserDropdown: Formatted users from challenges:', formattedUsers.length);
-        setUsers(formattedUsers);
-        setFilteredUsers(formattedUsers);
-        return;
-      }
-      
-      const formattedUsers = profilesData?.map((p: any) => ({
-        id: p.user_id,
-        email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'User',
-        full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-        friendly_id: p.friendly_id,
-        created_at: p.created_at
-      })) || [];
+          email: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.friendly_id || `User ${index + 1}` : `User ${index + 1}`,
+          full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : `User ${index + 1}`,
+          friendly_id: profile?.friendly_id || userId.slice(0, 8),
+          created_at: challengesData?.find(c => c.user_id === userId)?.created_at || new Date().toISOString()
+        };
+      });
 
       console.log('✅ SearchableUserDropdown: Formatted users:', formattedUsers.length);
       setUsers(formattedUsers);
