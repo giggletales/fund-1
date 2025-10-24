@@ -184,16 +184,13 @@ export default function AdminMT5() {
             max_daily_loss: c.max_daily_loss,
             max_total_loss: c.max_total_loss
           };
-        }); || [];
+        });
 
-      setAccounts(formattedAccounts);
-
-      // Set users from the already loaded data (convert usersMap to array)
-      const usersData = Array.from(usersMap.values());
+      // Set accounts with the formatted data
       setAccounts(formattedAccounts);
       
-      // Set all users with their profiles
-      const allUsers = Array.from(usersMap.values()).map(user => ({
+      // Set users with their profiles and challenges
+      const usersData = Array.from(usersMap.values()).map(user => ({
         ...user,
         ...(profilesMap.get(user.id) || {}),
         challenges: challengesData.filter((c: any) => c.user_id === user.id)
