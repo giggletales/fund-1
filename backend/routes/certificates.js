@@ -6,6 +6,16 @@ import { supabase } from '../config/supabase.js';
 
 const router = express.Router();
 
+// Version check endpoint
+router.get('/version', (req, res) => {
+  res.json({
+    success: true,
+    version: '2.0-fixed-document-types',
+    timestamp: new Date().toISOString(),
+    message: 'Using WELCOME_CERTIFICATE document type'
+  });
+});
+
 // Get certificate by account ID (legacy)
 router.get('/:account_id', async (req, res) => {
   try {
