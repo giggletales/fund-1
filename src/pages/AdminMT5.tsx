@@ -39,7 +39,15 @@ export default function AdminMT5() {
     try {
       // Fetch user data
       const { data: usersData, error: usersError } = await supabase.rpc('get_users_for_admin');
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('❌ Admin access error:', usersError);
+        if (usersError.message?.includes('Admin privileges required') || usersError.message?.includes('Access denied')) {
+          alert('⚠️ Admin Access Required\n\nYou do not have admin privileges. Please ensure your account is added to the admin_roles table in the database.');
+          setLoading(false);
+          return;
+        }
+        throw usersError;
+      }
 
       const usersMap = new Map(usersData?.map((u: any) => [u.id, u]) || []);
 
@@ -56,14 +64,42 @@ export default function AdminMT5() {
         .select('*')
         .order('purchase_date', { ascending: false });
 
-      if (challengesError) throw challengesError;
+      if (challengesError) {
+        console.error('❌ Error fetching challenges:', challengesError);
+        if (challengesError.message?.includes('row-level security') || challengesError.code === 'PGRST301') {
+          alert('⚠️ Admin Access Issue\n\nUnable to fetch all challenges. This usually means:\n1. Your account is not in the admin_roles table\n2. RLS policies are blocking access\n\nPlease contact a database administrator.');
+          setLoading(false);
+          return;
+        }
+        throw challengesError;
+      }
 
-      console.log('Admin: Total challenges fetched:', challengesData?.length);
-      console.log('Admin: Challenges without trading_account_id:', challengesData?.filter(c => !c.trading_account_id).length);
+      console.log('✅ Admin: Total challenges fetched:', challengesData?.length);
+      console.log('📊 Admin: Challenges without trading_account_id:', challengesData?.filter(c => !c.trading_account_id).length);
+      console.log('📊 Admin: Challenge statuses breakdown:', {
+        total: challengesData?.length || 0,
+        with_credentials: challengesData?.filter(c => c.trading_account_id).length || 0,
+        without_credentials: challengesData?.filter(c => !c.trading_account_id).length || 0,
+        active: challengesData?.filter(c => c.status === 'active').length || 0,
+        pending_payment: challengesData?.filter(c => c.status === 'pending_payment').length || 0,
+      });
 
       // Separate pending challenges (no trading_account_id yet)
       // Include all statuses except 'pending_payment' (which means payment not completed)
-      const pending = challengesData?.filter(c => !c.trading_account_id && c.status !== 'pending_payment').map((c: any) => {
+      const pending = challengesData?.filter(c => {
+        const needsCredentials = !c.trading_account_id && c.status !== 'pending_payment';
+        if (needsCredentials) {
+          console.log('🔍 Pending challenge found:', {
+            id: c.id,
+            user_id: c.user_id,
+            status: c.status,
+            account_size: c.account_size,
+            challenge_type: c.challenge_type,
+            purchase_date: c.purchase_date
+          });
+        }
+        return needsCredentials;
+      }).map((c: any) => {
         const user = usersMap.get(c.user_id);
         const friendlyId = profilesMap.get(c.user_id) || 'N/A';
         return {
@@ -82,14 +118,34 @@ export default function AdminMT5() {
         };
       }) || [];
 
-      console.log('Admin: Pending challenges:', pending.length, pending);
+      console.log('✅ Admin: Pending challenges (need MT5 credentials):', pending.length);
+      if (pending.length > 0) {
+        console.table(pending.map(p => ({
+          email: p.user_email,
+          account_size: p.account_size,
+          challenge_type: p.challenge_type,
+          status: p.status,
+          created: new Date(p.created_at).toLocaleDateString()
+        })));
+      }
 
       setPendingChallenges(pending);
       
-      // Show alert if no pending challenges found but there should be
+      // Show detailed info if no pending challenges found
       if (pending.length === 0 && challengesData && challengesData.length > 0) {
         console.warn('⚠️ No pending challenges found, but there are', challengesData.length, 'total challenges');
-        console.log('Challenge statuses:', challengesData.map(c => ({ id: c.id, status: c.status, has_trading_id: !!c.trading_account_id })));
+        console.log('📋 All challenge statuses:');
+        console.table(challengesData.map(c => ({ 
+          id: c.id.slice(0, 8), 
+          status: c.status, 
+          has_trading_id: !!c.trading_account_id,
+          account_size: c.account_size,
+          purchase_date: c.purchase_date ? new Date(c.purchase_date).toLocaleDateString() : 'N/A'
+        })));
+      }
+
+      if (challengesData && challengesData.length === 0) {
+        console.info('ℹ️ No challenges found in database. This could mean:\n  1. No users have purchased any challenges yet\n  2. Admin RLS policy is not working (check admin_roles table)');
       }
 
       // Format challenges as "accounts" for display
