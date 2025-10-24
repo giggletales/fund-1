@@ -56,6 +56,9 @@ export default function AdminMT5() {
         }
       ]) || []);
 
+      // Create profilesMap for friendly_id lookup
+      const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p.friendly_id]) || []);
+
       // Fetch ALL user challenges
       const { data: challengesData, error: challengesError } = await supabase
         .from('user_challenges')
