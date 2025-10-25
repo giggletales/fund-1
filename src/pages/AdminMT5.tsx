@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase, oldSupabase } from '../lib/db';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -1069,24 +1069,21 @@ function generatePassword() {
 // Reusable Searchable User Dropdown Component
 function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { onSelect: (user: any) => void; selectedUser: any; users?: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Use users from props if available, otherwise empty array
   const users = propUsers || [];
 
-  useEffect(() => {
+  const filteredUsers = useMemo(() => {
     if (searchTerm.length === 0) {
-      setFilteredUsers(users);
-    } else {
-      const filtered = users.filter(u => 
-        u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.friendly_id?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredUsers(filtered);
+      return users;
     }
+    return users.filter(u => 
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.friendly_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [searchTerm, users]);
 
   return (
@@ -1464,6 +1461,7 @@ function CertificatesTab({ users }: { users: any[] }) {
             <SearchableUserDropdown 
               onSelect={setSelectedUser}
               selectedUser={selectedUser}
+              users={users}
             />
           </div>
 
@@ -1699,6 +1697,7 @@ function UserProfilesTab({ users }: { users: any[] }) {
         <SearchableUserDropdown 
           onSelect={setSelectedUser}
           selectedUser={selectedUser}
+          users={users}
         />
       </div>
 
@@ -1777,6 +1776,7 @@ function ManualBreachTab({ users, accounts }: { users: any[]; accounts: any[] })
         <SearchableUserDropdown
           onSelect={setSelectedUser}
           selectedUser={selectedUser}
+          users={users}
         />
       </div>
       {selectedUser && (
