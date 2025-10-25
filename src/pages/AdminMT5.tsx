@@ -1117,7 +1117,7 @@ function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { 
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user: any) => (
                 <button
-                  key={user.id}
+                  key={user.user_id}
                   onClick={() => {
                     onSelect(user);
                     setIsOpen(false);
@@ -1415,8 +1415,8 @@ function CertificatesTab({ users }: { users: any[] }) {
             </div>
           ) : pendingCertificates.length > 0 ? (
             <div className="space-y-4">
-              {pendingCertificates.map((item, idx) => (
-                <div key={idx} className="glass-card p-6 border-l-4 border-yellow-500">
+              {pendingCertificates.map((item) => (
+                <div key={item.user_id + item.type} className="glass-card p-6 border-l-4 border-yellow-500">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="text-4xl">{item.icon}</div>
@@ -1492,18 +1492,21 @@ function CertificatesTab({ users }: { users: any[] }) {
           <h4 className="text-lg font-bold mb-4">Send Certificate</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <CertificateCard
+              key="welcome-cert"
               icon="🎉"
               title="Welcome Certificate"
               description="Send official welcome certificate"
               userId={selectedUser.id}
             />
             <CertificateCard
+              key="passed-cert"
               icon="🏆"
               title="Challenge Passed"
               description="Certificate for passing challenge"
               userId={selectedUser.id}
             />
             <CertificateCard
+              key="funded-cert"
               icon="💎"
               title="Funded Trader"
               description="Official funded trader certificate"
