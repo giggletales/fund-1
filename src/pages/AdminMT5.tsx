@@ -42,6 +42,11 @@ export default function AdminMT5() {
       console.log('🔄 Loading data from BOTH databases...');
       
       // ========== NEW DATABASE ==========
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        setLoading(false);
+        return;
+      }
       const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id, email');
@@ -66,28 +71,30 @@ export default function AdminMT5() {
       let oldChallengesData = null;
       
       try {
-        const { data: profiles, error: oldProfilesError } = await oldSupabase
-          .from('user_profiles')
-          .select('user_id, first_name, last_name, friendly_id, email');
-        
-        if (oldProfilesError) {
-          console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError.message);
-        } else {
-          oldProfilesData = profiles;
+        if (oldSupabase) {
+          const { data: profiles, error: oldProfilesError } = await oldSupabase
+            .from('user_profiles')
+            .select('user_id, first_name, last_name, friendly_id, email');
+          
+          if (oldProfilesError) {
+            console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError.message);
+          } else {
+            oldProfilesData = profiles;
+          }
+
+          const { data: challenges, error: oldChallengesError } = await oldSupabase
+            .from('user_challenges')
+            .select('*')
+            .order('purchase_date', { ascending: false });
+
+          if (oldChallengesError) {
+            console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError.message);
+          } else {
+            oldChallengesData = challenges;
+          }
+
+          console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
         }
-
-        const { data: challenges, error: oldChallengesError } = await oldSupabase
-          .from('user_challenges')
-          .select('*')
-          .order('purchase_date', { ascending: false });
-
-        if (oldChallengesError) {
-          console.warn('⚠️ Error fetching OLD DB challenges:', oldChallengesError.message);
-        } else {
-          oldChallengesData = challenges;
-        }
-
-        console.log('✅ OLD Database: Found', oldChallengesData?.length || 0, 'challenges');
       } catch (oldDbError: any) {
         console.warn('⚠️ OLD Database unavailable:', oldDbError.message || 'Connection failed');
         console.log('📊 Continuing with NEW database only...');
@@ -111,8 +118,8 @@ export default function AdminMT5() {
       ]));
 
       // Merge challenges from both databases and add source tracking
-      const newChallengesWithSource = (newChallengesData || []).map(c => ({ ...c, _db_source: 'NEW' }));
-      const oldChallengesWithSource = (oldChallengesData || []).map(c => ({ ...c, _db_source: 'OLD' }));
+      const newChallengesWithSource = (newChallengesData || []).map((c: any) => ({ ...c, _db_source: 'NEW' }));
+      const oldChallengesWithSource = (oldChallengesData || []).map((c: any) => ({ ...c, _db_source: 'OLD' }));
       const challengesData = [...newChallengesWithSource, ...oldChallengesWithSource];
 
       console.log('📊 MERGED: Total challenges:', challengesData.length);
@@ -395,13 +402,13 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
             />
             <StatCard
               label="Active"
-              value={accounts.filter(a => a.status === 'active').length}
+              value={accounts.filter((a: MT5Account) => a.status === 'active').length}
               icon="✅"
               color="green"
             />
             <StatCard
               label="Total Balance"
-              value={`$${accounts.reduce((sum, a) => sum + Number(a.current_balance), 0).toLocaleString()}`}
+              value={`$${accounts.reduce((sum: number, a: MT5Account) => sum + Number(a.current_balance), 0).toLocaleString()}`}
               icon="💰"
               color="purple"
             />
@@ -414,7 +421,7 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
               <p className="text-gray-400 mb-6">These users have purchased challenges and are waiting for MT5 account setup</p>
 
               <div className="space-y-4">
-                {pendingChallenges.map(challenge => (
+                {pendingChallenges.map((challenge: any) => (
                   <div key={challenge.id} className="bg-white/5 rounded-lg p-4 border border-yellow-500/30">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -490,7 +497,7 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredAccounts.map(account => (
+                {filteredAccounts.map((account: MT5Account) => (
                   <AccountCard
                     key={account.account_id}
                     account={account}
@@ -537,6 +544,9 @@ function AccountCard({ account, onUpdate }: { account: MT5Account; onUpdate: () 
   const sendCredentials = async () => {
     setSending(true);
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       // Mark as sent and visible (this will make credentials visible to user)
       const { error: updateError } = await supabase
         .from('user_challenges')
@@ -552,6 +562,9 @@ function AccountCard({ account, onUpdate }: { account: MT5Account; onUpdate: () 
       if (updateError) throw updateError;
 
       // Automatically create mt5_accounts entry for analytics
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data: existingMT5, error: checkError } = await supabase
         .from('mt5_accounts')
         .select('id')
@@ -561,6 +574,9 @@ function AccountCard({ account, onUpdate }: { account: MT5Account; onUpdate: () 
 
       if (!existingMT5) {
         // Create new MT5 account entry
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
         const { error: mt5Error } = await supabase
           .from('mt5_accounts')
           .insert({
@@ -717,6 +733,9 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       console.log('🔄 Loading pending challenges from BOTH databases...');
       
       // NEW DATABASE
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data: newChallenges, error: newChallengesError } = await supabase
         .from('user_challenges')
         .select('*')
@@ -728,6 +747,9 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
         console.error('Error loading NEW DB challenges:', newChallengesError);
       }
 
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
         .select('user_id, first_name, last_name, friendly_id');
@@ -741,27 +763,29 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       let oldProfilesData = null;
       
       try {
-        const { data: challenges, error: oldChallengesError } = await oldSupabase
-          .from('user_challenges')
-          .select('*')
-          .is('trading_account_id', null)
-          .neq('status', 'pending_payment')
-          .order('purchase_date', { ascending: false });
+        if (oldSupabase) {
+          const { data: challenges, error: oldChallengesError } = await oldSupabase
+            .from('user_challenges')
+            .select('*')
+            .is('trading_account_id', null)
+            .neq('status', 'pending_payment')
+            .order('purchase_date', { ascending: false });
 
-        if (oldChallengesError) {
-          console.warn('Error loading OLD DB challenges:', oldChallengesError.message);
-        } else {
-          oldChallenges = challenges;
-        }
+          if (oldChallengesError) {
+            console.warn('Error loading OLD DB challenges:', oldChallengesError.message);
+          } else {
+            oldChallenges = challenges;
+          }
 
-        const { data: profiles, error: oldProfilesError } = await oldSupabase
-          .from('user_profiles')
-          .select('user_id, first_name, last_name, friendly_id');
+          const { data: profiles, error: oldProfilesError } = await oldSupabase
+            .from('user_profiles')
+            .select('user_id, first_name, last_name, friendly_id');
 
-        if (oldProfilesError) {
-          console.warn('Could not load OLD DB user profiles:', oldProfilesError.message);
-        } else {
-          oldProfilesData = profiles;
+          if (oldProfilesError) {
+            console.warn('Could not load OLD DB user profiles:', oldProfilesError.message);
+          } else {
+            oldProfilesData = profiles;
+          }
         }
       } catch (oldDbError: any) {
         console.warn('⚠️ OLD Database unavailable for pending challenges:', oldDbError.message || 'Connection failed');
@@ -779,8 +803,8 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       ]));
 
       // Merge challenges and add source tracking
-      const newChallengesWithSource = (newChallenges || []).map(c => ({ ...c, _db_source: 'NEW' }));
-      const oldChallengesWithSource = (oldChallenges || []).map(c => ({ ...c, _db_source: 'OLD' }));
+      const newChallengesWithSource = (newChallenges || []).map((c: any) => ({ ...c, _db_source: 'NEW' }));
+      const oldChallengesWithSource = (oldChallenges || []).map((c: any) => ({ ...c, _db_source: 'OLD' }));
       const allChallenges = [...newChallengesWithSource, ...oldChallengesWithSource];
 
       console.log('✅ Pending challenges - NEW DB:', newChallenges?.length || 0, '| OLD DB:', oldChallenges?.length || 0);
@@ -836,6 +860,10 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       const dbClient = selectedChallenge._db_source === 'OLD' ? oldSupabase : supabase;
       const dbName = selectedChallenge._db_source === 'OLD' ? 'OLD DB' : 'NEW DB';
       
+      if (!dbClient) {
+        throw new Error('Database client is not initialized');
+      }
+
       console.log(`💾 Assigning credentials to ${dbName}...`);
 
       // Update the selected challenge with MT5 credentials
@@ -859,6 +887,9 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
 
       // Generate purchase certificate when credentials are assigned
       try {
+        if (!dbClient) {
+          throw new Error('Database client is not initialized');
+        }
         const { error: certError } = await dbClient
           .from('downloads')
           .insert({
@@ -1040,36 +1071,10 @@ function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Use users from props if available, otherwise empty array
   const users = propUsers || [];
-
-  useEffect(() => {
-    // Filter users based on search term
-      newUsers.forEach(user => allUsersMap.set(user.id, user));
-      
-      // Add OLD database users (only if not already in NEW)
-      oldUsers.forEach(user => {
-        if (!allUsersMap.has(user.id)) {
-          allUsersMap.set(user.id, user);
-        }
-      });
-
-      const mergedUsers = Array.from(allUsersMap.values());
-      
-      console.log('✅ MERGED: Total unique users:', mergedUsers.length);
-      console.log('   - From NEW DB:', newUsers.length);
-      console.log('   - From OLD DB:', oldUsers.length);
-      console.log('   - Unique total:', mergedUsers.length);
-      
-      setUsers(mergedUsers);
-      setFilteredUsers(mergedUsers);
-    } catch (error) {
-      console.error('❌ SearchableUserDropdown: Error loading users:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
     if (searchTerm.length === 0) {
@@ -1113,7 +1118,7 @@ function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { 
             {loading ? (
               <div className="p-8 text-center text-white/60">Loading users...</div>
             ) : filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
+              filteredUsers.map((user: any) => (
                 <button
                   key={user.id}
                   onClick={() => {
@@ -1156,6 +1161,9 @@ function CertificateCard({ icon, title, description, userId }: any) {
   const sendCertificate = async () => {
     setSending(true);
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { error } = await supabase
         .from('downloads')
         .insert({
@@ -1212,6 +1220,9 @@ function CertificatesTab({ users }: { users: any[] }) {
     try {
       setLoading(true);
       
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       // Get all sent certificates
       const { data: allCerts, error: certsError } = await supabase
         .from('downloads')
@@ -1246,6 +1257,9 @@ function CertificatesTab({ users }: { users: any[] }) {
         }
 
         // Check for active challenges
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
         const { data: userAccounts } = await supabase
           .from('mt5_accounts')
           .select('*')
@@ -1885,6 +1899,9 @@ function AffiliatesManagementTab() {
 
   async function loadAffiliateData() {
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       // Fetch affiliates
       const { data: affiliatesData, error: affiliatesError } = await supabase
         .from('affiliates')
@@ -1894,6 +1911,9 @@ function AffiliatesManagementTab() {
       if (affiliatesError) throw affiliatesError;
 
       // Fetch payouts
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data: payoutsData, error: payoutsError } = await supabase
         .from('payouts')
         .select('*, affiliates(*)')
@@ -1914,6 +1934,9 @@ function AffiliatesManagementTab() {
     try {
       const newStatus = action === 'approve' ? 'processing' : 'rejected';
       
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { error } = await supabase
         .from('payouts')
         .update({ 
