@@ -84,11 +84,11 @@ const AdminMT5: React.FC = () => {
 
     if (session) {
       fetchUserProfiles();
-    } else if (!loading && !session) {
+    } else if (!session) {
       // Using window.location.href for redirection
       window.location.href = '/login';
     }
-  }, [session, loading]);
+  }, [session]);
 
   const filteredUsers = useMemo(() => {
     return userProfiles.filter(user =>
