@@ -21,9 +21,11 @@
 */
 
 -- Create sequence for user numbers starting at 10000
+DROP SEQUENCE IF EXISTS user_number_seq;
 CREATE SEQUENCE IF NOT EXISTS user_number_seq START WITH 10000 INCREMENT BY 1;
 
 -- Create user_profiles table
+DROP TABLE IF EXISTS user_profiles CASCADE;
 CREATE TABLE IF NOT EXISTS user_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -39,17 +41,20 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can read own profile" ON user_profiles;
 CREATE POLICY "Users can read own profile"
   ON user_profiles FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
 CREATE POLICY "Users can update own profile"
   ON user_profiles FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
 CREATE POLICY "Users can insert own profile"
   ON user_profiles FOR INSERT
   TO authenticated

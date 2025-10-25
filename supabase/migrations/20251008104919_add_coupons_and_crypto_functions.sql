@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS coupons (
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view active coupons" ON coupons;
 CREATE POLICY "Anyone can view active coupons"
   ON coupons FOR SELECT
   USING (is_active = true AND (expires_at IS NULL OR expires_at > now()));

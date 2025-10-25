@@ -9,6 +9,7 @@
     - Returns aggregated data without exposing sensitive information
 */
 
+DROP FUNCTION IF EXISTS get_leaderboard();
 CREATE OR REPLACE FUNCTION get_leaderboard()
 RETURNS TABLE(
   user_id uuid,

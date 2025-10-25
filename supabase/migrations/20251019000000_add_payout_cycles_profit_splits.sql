@@ -1,4 +1,5 @@
 -- Add new table for payout cycle configurations
+DROP TABLE IF EXISTS payout_cycles CASCADE;
 CREATE TABLE payout_cycles (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -17,6 +18,17 @@ INSERT INTO payout_cycles (name, percentage, description, recommended, frequency
 ('Weekly', 75, 'Every week (Mondays)', false, 'Weekly', 7);
 
 -- Add payout_cycle_id to user_challenges table
+CREATE TABLE IF NOT EXISTS user_challenges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  challenge_type text,
+  status text,
+  purchase_date timestamptz,
+  trading_account_id text,
+  current_phase integer,
+  account_size numeric,
+  amount_paid numeric
+);
 ALTER TABLE user_challenges
 ADD COLUMN payout_cycle_id INT REFERENCES payout_cycles(id);
 

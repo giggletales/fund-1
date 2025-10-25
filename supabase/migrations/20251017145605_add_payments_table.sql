@@ -27,6 +27,7 @@
 */
 
 -- Create payments table
+DROP TABLE IF EXISTS payments CASCADE;
 CREATE TABLE IF NOT EXISTS payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -44,16 +45,19 @@ CREATE TABLE IF NOT EXISTS payments (
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 CREATE POLICY "Users can view own payments"
   ON payments FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own payments" ON payments;
 CREATE POLICY "Users can insert own payments"
   ON payments FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own payments" ON payments;
 CREATE POLICY "Users can update own payments"
   ON payments FOR UPDATE
   TO authenticated

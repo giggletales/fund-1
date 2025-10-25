@@ -22,6 +22,7 @@
 */
 
 -- Create contracts table
+DROP TABLE IF EXISTS contracts CASCADE;
 CREATE TABLE IF NOT EXISTS contracts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -96,18 +97,21 @@ CREATE TABLE IF NOT EXISTS contracts (
 ALTER TABLE contracts ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own contracts" ON contracts;
 CREATE POLICY "Users can view own contracts"
   ON contracts
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own contracts" ON contracts;
 CREATE POLICY "Users can insert own contracts"
   ON contracts
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all contracts" ON contracts;
 CREATE POLICY "Admins can view all contracts"
   ON contracts
   FOR SELECT
@@ -120,6 +124,7 @@ CREATE POLICY "Admins can view all contracts"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update contracts" ON contracts;
 CREATE POLICY "Admins can update contracts"
   ON contracts
   FOR UPDATE
@@ -140,6 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_contracts_signed_at ON contracts(signed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contracts_email ON contracts(email);
 
 -- Function to check if contract exists for challenge
+DROP FUNCTION IF EXISTS has_signed_contract(uuid, uuid);
 CREATE OR REPLACE FUNCTION has_signed_contract(p_user_id uuid, p_challenge_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -156,6 +162,7 @@ END;
 $$;
 
 -- Function to get user's contracts
+DROP FUNCTION IF EXISTS get_user_contracts(uuid);
 CREATE OR REPLACE FUNCTION get_user_contracts(p_user_id uuid)
 RETURNS TABLE (
   id uuid,
@@ -184,13 +191,25 @@ END;
 $$;
 
 -- Add contract_signed flag to user_challenges
-ALTER TABLE user_challenges 
+CREATE TABLE IF NOT EXISTS user_challenges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  challenge_type text,
+  status text,
+  purchase_date timestamptz,
+  trading_account_id text,
+  current_phase integer,
+  account_size numeric,
+  amount_paid numeric
+);
+ALTER TABLE user_challenges
 ADD COLUMN IF NOT EXISTS contract_signed boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS contract_id uuid REFERENCES contracts(id),
 ADD COLUMN IF NOT EXISTS credentials_visible boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS credentials_released_at timestamptz;
 
 -- Update trigger for contracts
+DROP FUNCTION IF EXISTS update_contract_timestamp();
 CREATE OR REPLACE FUNCTION update_contract_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -199,6 +218,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_contracts_timestamp ON contracts;
 CREATE TRIGGER update_contracts_timestamp
   BEFORE UPDATE ON contracts
   FOR EACH ROW

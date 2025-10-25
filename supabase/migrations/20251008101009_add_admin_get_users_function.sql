@@ -11,6 +11,7 @@
 */
 
 -- Create function to get users list
+DROP FUNCTION IF EXISTS get_users_for_admin();
 CREATE OR REPLACE FUNCTION get_users_for_admin()
 RETURNS TABLE (
   id uuid,

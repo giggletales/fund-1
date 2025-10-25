@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS challenge_types CASCADE;
+DROP TABLE IF EXISTS pricing_matrix CASCADE;
+DROP TABLE IF EXISTS consistency_scores CASCADE;
+DROP TABLE IF EXISTS trade_analytics CASCADE;
+DROP TABLE IF EXISTS daily_performance CASCADE;
+DROP TABLE IF EXISTS advanced_metrics_cache CASCADE;

@@ -49,5 +49,8 @@ CREATE TABLE IF NOT EXISTS pricing_matrix (
 ALTER TABLE challenge_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pricing_matrix ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view challenge types" ON challenge_types;
 CREATE POLICY "Anyone can view challenge types" ON challenge_types FOR SELECT TO public USING (is_active = true);
+
+DROP POLICY IF EXISTS "Anyone can view pricing" ON pricing_matrix;
 CREATE POLICY "Anyone can view pricing" ON pricing_matrix FOR SELECT TO public USING (is_active = true);

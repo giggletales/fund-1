@@ -30,6 +30,7 @@
 */
 
 -- Create support_tickets table
+DROP TABLE IF EXISTS support_tickets CASCADE;
 CREATE TABLE IF NOT EXISTS support_tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) NOT NULL,
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 );
 
 -- Create ticket_messages table
+DROP TABLE IF EXISTS ticket_messages CASCADE;
 CREATE TABLE IF NOT EXISTS ticket_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id uuid REFERENCES support_tickets(id) ON DELETE CASCADE NOT NULL,
@@ -63,16 +65,19 @@ ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ticket_messages ENABLE ROW LEVEL SECURITY;
 
 -- Support tickets policies
+DROP POLICY IF EXISTS "Users can view their own tickets" ON support_tickets;
 CREATE POLICY "Users can view their own tickets"
   ON support_tickets FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create tickets" ON support_tickets;
 CREATE POLICY "Users can create tickets"
   ON support_tickets FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own tickets" ON support_tickets;
 CREATE POLICY "Users can update their own tickets"
   ON support_tickets FOR UPDATE
   TO authenticated
@@ -80,6 +85,7 @@ CREATE POLICY "Users can update their own tickets"
   WITH CHECK (auth.uid() = user_id);
 
 -- Ticket messages policies
+DROP POLICY IF EXISTS "Users can view messages for their tickets" ON ticket_messages;
 CREATE POLICY "Users can view messages for their tickets"
   ON ticket_messages FOR SELECT
   TO authenticated
@@ -91,6 +97,7 @@ CREATE POLICY "Users can view messages for their tickets"
     )
   );
 
+DROP POLICY IF EXISTS "Users can add messages to their tickets" ON ticket_messages;
 CREATE POLICY "Users can add messages to their tickets"
   ON ticket_messages FOR INSERT
   TO authenticated

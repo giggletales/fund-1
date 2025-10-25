@@ -20,6 +20,7 @@
 */
 
 -- Create downloads table
+DROP TABLE IF EXISTS downloads CASCADE;
 CREATE TABLE IF NOT EXISTS downloads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -102,12 +103,14 @@ CREATE TABLE IF NOT EXISTS downloads (
 ALTER TABLE downloads ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own downloads" ON downloads;
 CREATE POLICY "Users can view own downloads"
   ON downloads
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own download stats" ON downloads;
 CREATE POLICY "Users can update own download stats"
   ON downloads
   FOR UPDATE
@@ -115,12 +118,14 @@ CREATE POLICY "Users can update own download stats"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "System can insert downloads" ON downloads;
 CREATE POLICY "System can insert downloads"
   ON downloads
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all downloads" ON downloads;
 CREATE POLICY "Admins can view all downloads"
   ON downloads
   FOR SELECT
@@ -141,6 +146,7 @@ CREATE INDEX IF NOT EXISTS idx_downloads_created ON downloads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_downloads_document_number ON downloads(document_number);
 
 -- Function to generate certificate number
+DROP FUNCTION IF EXISTS generate_certificate_number(text, uuid);
 CREATE OR REPLACE FUNCTION generate_certificate_number(cert_type text, user_id_val uuid)
 RETURNS text
 LANGUAGE plpgsql
@@ -163,6 +169,7 @@ END;
 $$;
 
 -- Trigger to auto-generate document/certificate numbers
+DROP FUNCTION IF EXISTS set_download_numbers();
 CREATE OR REPLACE FUNCTION set_download_numbers()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -181,18 +188,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_download_numbers_trigger ON downloads;
 CREATE TRIGGER set_download_numbers_trigger
   BEFORE INSERT ON downloads
   FOR EACH ROW
   EXECUTE FUNCTION set_download_numbers();
 
 -- Update trigger
+DROP TRIGGER IF EXISTS update_downloads_timestamp ON downloads;
 CREATE TRIGGER update_downloads_timestamp
   BEFORE UPDATE ON downloads
   FOR EACH ROW
   EXECUTE FUNCTION update_contract_timestamp();
 
 -- Function to track download
+DROP FUNCTION IF EXISTS track_download(uuid);
 CREATE OR REPLACE FUNCTION track_download(p_download_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -208,6 +218,7 @@ END;
 $$;
 
 -- Function to get user downloads
+DROP FUNCTION IF EXISTS get_user_downloads(uuid, text);
 CREATE OR REPLACE FUNCTION get_user_downloads(p_user_id uuid, p_document_type text DEFAULT NULL)
 RETURNS TABLE (
   id uuid,
@@ -259,6 +270,7 @@ END;
 $$;
 
 -- Function to auto-generate welcome certificate
+DROP FUNCTION IF EXISTS auto_generate_welcome_certificate();
 CREATE OR REPLACE FUNCTION auto_generate_welcome_certificate()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -12,6 +12,7 @@
 */
 
 -- Competitions Table
+DROP TABLE IF EXISTS competitions CASCADE;
 CREATE TABLE IF NOT EXISTS competitions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS competitions (
 );
 
 -- Competition Participants
+DROP TABLE IF EXISTS competition_participants CASCADE;
 CREATE TABLE IF NOT EXISTS competition_participants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   competition_id uuid REFERENCES competitions(id) ON DELETE CASCADE,
@@ -44,6 +46,7 @@ CREATE TABLE IF NOT EXISTS competition_participants (
 );
 
 -- Manual Action Logs
+DROP TABLE IF EXISTS manual_action_logs CASCADE;
 CREATE TABLE IF NOT EXISTS manual_action_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   action_type text NOT NULL CHECK (action_type IN ('CERTIFICATE_SENT', 'ACCOUNT_BREACHED', 'ACCOUNT_REINSTATED', 'PAYOUT_APPROVED', 'USER_SUSPENDED', 'COMPETITION_CREATED')),
@@ -76,6 +79,7 @@ ALTER TABLE competition_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE manual_action_logs ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for competitions (admins can do everything)
+DROP POLICY IF EXISTS "Admins can manage competitions" ON competitions;
 CREATE POLICY "Admins can manage competitions"
   ON competitions FOR ALL
   TO authenticated
@@ -88,12 +92,14 @@ CREATE POLICY "Admins can manage competitions"
   );
 
 -- Users can view active competitions
+DROP POLICY IF EXISTS "Users can view active competitions" ON competitions;
 CREATE POLICY "Users can view active competitions"
   ON competitions FOR SELECT
   TO authenticated
   USING (status IN ('active', 'upcoming', 'completed'));
 
 -- RLS for competition participants
+DROP POLICY IF EXISTS "Admins can manage participants" ON competition_participants;
 CREATE POLICY "Admins can manage participants"
   ON competition_participants FOR ALL
   TO authenticated
@@ -106,12 +112,14 @@ CREATE POLICY "Admins can manage participants"
   );
 
 -- Users can view their own participation
+DROP POLICY IF EXISTS "Users can view own participation" ON competition_participants;
 CREATE POLICY "Users can view own participation"
   ON competition_participants FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
 -- RLS for manual action logs (admins only)
+DROP POLICY IF EXISTS "Admins can view action logs" ON manual_action_logs;
 CREATE POLICY "Admins can view action logs"
   ON manual_action_logs FOR SELECT
   TO authenticated
@@ -123,6 +131,7 @@ CREATE POLICY "Admins can view action logs"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can insert action logs" ON manual_action_logs;
 CREATE POLICY "Admins can insert action logs"
   ON manual_action_logs FOR INSERT
   TO authenticated

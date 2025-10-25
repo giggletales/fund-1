@@ -40,6 +40,7 @@
 -- 1. CREATE ADMIN ROLES TABLE
 -- =====================================================
 
+DROP TABLE IF EXISTS admin_roles CASCADE;
 CREATE TABLE IF NOT EXISTS admin_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id),
@@ -53,6 +54,7 @@ CREATE TABLE IF NOT EXISTS admin_roles (
 ALTER TABLE admin_roles ENABLE ROW LEVEL SECURITY;
 
 -- Admins can view all admin roles
+DROP POLICY IF EXISTS "Admins can view admin roles" ON admin_roles;
 CREATE POLICY "Admins can view admin roles"
   ON admin_roles FOR SELECT
   TO authenticated
@@ -64,6 +66,7 @@ CREATE POLICY "Admins can view admin roles"
   );
 
 -- Only super admins can insert new admin roles (use service role)
+DROP POLICY IF EXISTS "Service role can manage admin roles" ON admin_roles;
 CREATE POLICY "Service role can manage admin roles"
   ON admin_roles FOR ALL
   TO service_role
@@ -74,6 +77,7 @@ CREATE POLICY "Service role can manage admin roles"
 -- 2. CREATE ADMIN HELPER FUNCTION
 -- =====================================================
 
+DROP FUNCTION IF EXISTS is_admin() CASCADE;
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
@@ -155,6 +159,7 @@ CREATE POLICY "Admins can update challenges"
 -- =====================================================
 
 -- Function to get all users for admin panel
+DROP FUNCTION IF EXISTS get_users_for_admin() CASCADE;
 CREATE OR REPLACE FUNCTION get_users_for_admin()
 RETURNS TABLE (
   id uuid,
@@ -183,6 +188,7 @@ END;
 $$;
 
 -- Function to get all challenges for admin panel
+DROP FUNCTION IF EXISTS get_all_challenges_for_admin() CASCADE;
 CREATE OR REPLACE FUNCTION get_all_challenges_for_admin()
 RETURNS TABLE (
   id uuid,
@@ -232,6 +238,7 @@ END;
 $$;
 
 -- Function to get all MT5 accounts for admin panel
+DROP FUNCTION IF EXISTS get_all_mt5_accounts_for_admin() CASCADE;
 CREATE OR REPLACE FUNCTION get_all_mt5_accounts_for_admin()
 RETURNS TABLE (
   account_id text,

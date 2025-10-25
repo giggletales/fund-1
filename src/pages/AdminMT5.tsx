@@ -1953,25 +1953,21 @@ function AffiliatesManagementTab() {
       if (!supabase) {
         throw new Error('Supabase client is not initialized');
       }
-      // FIX: Fetch payouts and affiliates separately and join them manually
+      // Fetch payouts with affiliate data
       const { data: payoutsData, error: payoutsError } = await supabase
         .from('payouts')
-        .select('*')
+        .select(`
+          *,
+          affiliates (
+            affiliate_code
+          )
+        `)
         .order('requested_at', { ascending: false });
 
       if (payoutsError) throw payoutsError;
 
-      // Manually join affiliate data into payouts
-      const enrichedPayouts = payoutsData?.map(payout => {
-        const affiliate = affiliatesData?.find(aff => aff.id === payout.affiliate_id);
-        return {
-          ...payout,
-          affiliates: affiliate || null, // Nest affiliate data like the original query
-        };
-      });
-
       setAffiliates(affiliatesData || []);
-      setPayouts(enrichedPayouts || []);
+      setPayouts(payoutsData || []);
     } catch (error) {
       console.error('Error loading affiliate data:', error);
     } finally {

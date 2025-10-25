@@ -25,6 +25,7 @@
 */
 
 -- Create coupons table
+DROP TABLE IF EXISTS coupons CASCADE;
 CREATE TABLE IF NOT EXISTS coupons (
   coupon_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text UNIQUE NOT NULL,
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS coupons (
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view active coupons" ON coupons;
 CREATE POLICY "Anyone can view active coupons"
   ON coupons FOR SELECT
   USING (is_active = true AND (expires_at IS NULL OR expires_at > now()));

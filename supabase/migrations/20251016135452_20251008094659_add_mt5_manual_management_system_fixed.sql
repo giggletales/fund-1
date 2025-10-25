@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS mt5_accounts (
 
 ALTER TABLE mt5_accounts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own MT5 accounts" ON mt5_accounts;
 CREATE POLICY "Users can view own MT5 accounts"
   ON mt5_accounts FOR SELECT
   TO authenticated
@@ -55,6 +56,7 @@ CREATE POLICY "Users can update own MT5 accounts"
   WITH CHECK (auth.uid() = user_id);
 
 -- Trade History table
+DROP TABLE IF EXISTS mt5_trades;
 CREATE TABLE IF NOT EXISTS mt5_trades (
     trade_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES mt5_accounts(account_id) ON DELETE CASCADE,
@@ -92,6 +94,7 @@ CREATE TABLE IF NOT EXISTS mt5_trades (
 
 ALTER TABLE mt5_trades ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view trades for own MT5 accounts" ON mt5_trades;
 CREATE POLICY "Users can view trades for own MT5 accounts"
   ON mt5_trades FOR SELECT
   TO authenticated
@@ -104,6 +107,7 @@ CREATE POLICY "Users can view trades for own MT5 accounts"
   );
 
 -- Daily Equity Snapshots table
+DROP TABLE IF EXISTS mt5_equity_snapshots;
 CREATE TABLE IF NOT EXISTS mt5_equity_snapshots (
     snapshot_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES mt5_accounts(account_id) ON DELETE CASCADE,
@@ -129,6 +133,7 @@ CREATE TABLE IF NOT EXISTS mt5_equity_snapshots (
 
 ALTER TABLE mt5_equity_snapshots ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view equity snapshots for own accounts" ON mt5_equity_snapshots;
 CREATE POLICY "Users can view equity snapshots for own accounts"
   ON mt5_equity_snapshots FOR SELECT
   TO authenticated

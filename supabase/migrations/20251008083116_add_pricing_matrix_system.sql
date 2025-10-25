@@ -17,7 +17,8 @@
 */
 
 -- Create challenge_types reference table
-CREATE TABLE IF NOT EXISTS challenge_types (
+DROP TABLE IF EXISTS challenge_types CASCADE;
+CREATE TABLE challenge_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100) NOT NULL,
@@ -55,7 +56,8 @@ CREATE TABLE IF NOT EXISTS challenge_types (
 );
 
 -- Create pricing matrix table
-CREATE TABLE IF NOT EXISTS pricing_matrix (
+DROP TABLE IF EXISTS pricing_matrix CASCADE;
+CREATE TABLE pricing_matrix (
     pricing_id SERIAL PRIMARY KEY,
     account_size DECIMAL(15,2) NOT NULL,
     challenge_type VARCHAR(50) NOT NULL,
@@ -105,7 +107,7 @@ END $$;
 -- Create consistency_scores table
 CREATE TABLE IF NOT EXISTS consistency_scores (
     score_id SERIAL PRIMARY KEY,
-    challenge_id UUID NOT NULL REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
     calculated_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Overall Score

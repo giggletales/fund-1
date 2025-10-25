@@ -104,23 +104,26 @@ CREATE TABLE IF NOT EXISTS master_challenges (
 ALTER TABLE master_challenges ENABLE ROW LEVEL SECURITY;
 
 -- RLS for master_challenges
+DROP POLICY IF EXISTS "Users can view own master challenges" ON master_challenges;
 CREATE POLICY "Users can view own master challenges"
   ON master_challenges FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all master challenges" ON master_challenges;
 CREATE POLICY "Admins can view all master challenges"
   ON master_challenges FOR SELECT
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
+    EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin')
   );
 
+DROP POLICY IF EXISTS "Admins can manage master challenges" ON master_challenges;
 CREATE POLICY "Admins can manage master challenges"
   ON master_challenges FOR ALL
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
+    EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin')
   );
 
 -- ====================================
@@ -155,6 +158,7 @@ CREATE TABLE IF NOT EXISTS master_challenge_trades (
 
 ALTER TABLE master_challenge_trades ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own trades" ON master_challenge_trades;
 CREATE POLICY "Users can view own trades"
   ON master_challenge_trades FOR SELECT
   TO authenticated
@@ -166,11 +170,12 @@ CREATE POLICY "Users can view own trades"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view all trades" ON master_challenge_trades;
 CREATE POLICY "Admins can view all trades"
   ON master_challenge_trades FOR SELECT
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
+    EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin')
   );
 
 -- ====================================
@@ -192,6 +197,7 @@ CREATE TABLE IF NOT EXISTS master_challenge_violations (
 
 ALTER TABLE master_challenge_violations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own violations" ON master_challenge_violations;
 CREATE POLICY "Users can view own violations"
   ON master_challenge_violations FOR SELECT
   TO authenticated
@@ -203,11 +209,12 @@ CREATE POLICY "Users can view own violations"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage violations" ON master_challenge_violations;
 CREATE POLICY "Admins can manage violations"
   ON master_challenge_violations FOR ALL
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
+    EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin')
   );
 
 -- ====================================
@@ -228,6 +235,7 @@ CREATE TABLE IF NOT EXISTS master_challenge_sector_rotation (
 
 ALTER TABLE master_challenge_sector_rotation ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own sector rotation" ON master_challenge_sector_rotation;
 CREATE POLICY "Users can view own sector rotation"
   ON master_challenge_sector_rotation FOR SELECT
   TO authenticated
@@ -259,6 +267,7 @@ CREATE TABLE IF NOT EXISTS master_challenge_momentum (
 
 ALTER TABLE master_challenge_momentum ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own momentum" ON master_challenge_momentum;
 CREATE POLICY "Users can view own momentum"
   ON master_challenge_momentum FOR SELECT
   TO authenticated

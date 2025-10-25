@@ -18,7 +18,8 @@
 */
 
 -- Challenge Types Table
-CREATE TABLE IF NOT EXISTS challenge_types (
+DROP TABLE IF EXISTS challenge_types CASCADE;
+CREATE TABLE challenge_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100) NOT NULL,
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS challenge_types (
 
 ALTER TABLE challenge_types ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Challenge types are publicly viewable" ON challenge_types;
 CREATE POLICY "Challenge types are publicly viewable"
   ON challenge_types FOR SELECT
   TO authenticated, anon
@@ -142,7 +144,8 @@ SET number_of_phases = 1
 WHERE type_name = 'professional';
 
 -- Consistency Scores Table
-CREATE TABLE IF NOT EXISTS consistency_scores (
+DROP TABLE IF EXISTS consistency_scores CASCADE;
+CREATE TABLE consistency_scores (
     score_id SERIAL PRIMARY KEY,
     challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
     calculated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -192,6 +195,7 @@ CREATE TABLE IF NOT EXISTS consistency_scores (
 
 ALTER TABLE consistency_scores ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own consistency scores" ON consistency_scores;
 CREATE POLICY "Users can view own consistency scores"
   ON consistency_scores FOR SELECT
   TO authenticated
@@ -207,7 +211,8 @@ CREATE INDEX IF NOT EXISTS idx_consistency_challenge ON consistency_scores(chall
 CREATE INDEX IF NOT EXISTS idx_consistency_passed ON consistency_scores(passed);
 
 -- Trade Analytics Table
-CREATE TABLE IF NOT EXISTS trade_analytics (
+DROP TABLE IF EXISTS trade_analytics CASCADE;
+CREATE TABLE trade_analytics (
     analytics_id SERIAL PRIMARY KEY,
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
@@ -250,6 +255,7 @@ CREATE TABLE IF NOT EXISTS trade_analytics (
 
 ALTER TABLE trade_analytics ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own trade analytics" ON trade_analytics;
 CREATE POLICY "Users can view own trade analytics"
   ON trade_analytics FOR SELECT
   TO authenticated
@@ -265,7 +271,8 @@ CREATE INDEX IF NOT EXISTS idx_trade_analytics_order ON trade_analytics(order_id
 CREATE INDEX IF NOT EXISTS idx_trade_analytics_challenge ON trade_analytics(challenge_id);
 
 -- Daily Performance Table
-CREATE TABLE IF NOT EXISTS daily_performance (
+DROP TABLE IF EXISTS daily_performance CASCADE;
+CREATE TABLE daily_performance (
     daily_id SERIAL PRIMARY KEY,
     challenge_id UUID NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
     date DATE NOT NULL,
@@ -300,6 +307,7 @@ CREATE TABLE IF NOT EXISTS daily_performance (
 
 ALTER TABLE daily_performance ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own daily performance" ON daily_performance;
 CREATE POLICY "Users can view own daily performance"
   ON daily_performance FOR SELECT
   TO authenticated
@@ -349,6 +357,7 @@ CREATE TABLE IF NOT EXISTS advanced_metrics_cache (
 
 ALTER TABLE advanced_metrics_cache ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own advanced metrics" ON advanced_metrics_cache;
 CREATE POLICY "Users can view own advanced metrics"
   ON advanced_metrics_cache FOR SELECT
   TO authenticated

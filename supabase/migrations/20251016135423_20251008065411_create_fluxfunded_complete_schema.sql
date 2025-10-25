@@ -51,16 +51,19 @@ CREATE TABLE IF NOT EXISTS challenges (
 
 ALTER TABLE challenges ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own challenges" ON challenges;
 CREATE POLICY "Users can view own challenges"
   ON challenges FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own challenges" ON challenges;
 CREATE POLICY "Users can insert own challenges"
   ON challenges FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own challenges" ON challenges;
 CREATE POLICY "Users can update own challenges"
   ON challenges FOR UPDATE
   TO authenticated
@@ -91,6 +94,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view orders for own challenges" ON orders;
 CREATE POLICY "Users can view orders for own challenges"
   ON orders FOR SELECT
   TO authenticated
@@ -102,6 +106,7 @@ CREATE POLICY "Users can view orders for own challenges"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert orders for own challenges" ON orders;
 CREATE POLICY "Users can insert orders for own challenges"
   ON orders FOR INSERT
   TO authenticated
@@ -134,6 +139,7 @@ CREATE TABLE IF NOT EXISTS daily_stats (
 
 ALTER TABLE daily_stats ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view daily stats for own challenges" ON daily_stats;
 CREATE POLICY "Users can view daily stats for own challenges"
   ON daily_stats FOR SELECT
   TO authenticated
@@ -163,12 +169,14 @@ CREATE TABLE IF NOT EXISTS payments (
 
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 CREATE POLICY "Users can view own payments"
   ON payments FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
 -- Payouts table  
+DROP TABLE IF EXISTS payouts;
 CREATE TABLE IF NOT EXISTS payouts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -189,11 +197,13 @@ CREATE TABLE IF NOT EXISTS payouts (
 
 ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own payouts" ON payouts;
 CREATE POLICY "Users can view own payouts"
   ON payouts FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can request payouts" ON payouts;
 CREATE POLICY "Users can request payouts"
   ON payouts FOR INSERT
   TO authenticated
@@ -214,11 +224,13 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own tickets" ON support_tickets;
 CREATE POLICY "Users can view own tickets"
   ON support_tickets FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create tickets" ON support_tickets;
 CREATE POLICY "Users can create tickets"
   ON support_tickets FOR INSERT
   TO authenticated
@@ -237,6 +249,7 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
 
 ALTER TABLE ticket_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view messages for own tickets" ON ticket_messages;
 CREATE POLICY "Users can view messages for own tickets"
   ON ticket_messages FOR SELECT
   TO authenticated
@@ -258,6 +271,7 @@ CREATE TABLE IF NOT EXISTS warning_log (
 
 ALTER TABLE warning_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view warnings for own challenges" ON warning_log;
 CREATE POLICY "Users can view warnings for own challenges"
   ON warning_log FOR SELECT
   TO authenticated
@@ -283,6 +297,7 @@ CREATE TABLE IF NOT EXISTS email_log (
 
 ALTER TABLE email_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can insert email logs" ON email_log;
 CREATE POLICY "Public can insert email logs"
   ON email_log FOR INSERT
   TO anon, authenticated
@@ -299,6 +314,7 @@ CREATE TABLE IF NOT EXISTS platform_settings (
 
 ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can read settings" ON platform_settings;
 CREATE POLICY "Anyone can read settings"
   ON platform_settings FOR SELECT
   TO authenticated, anon

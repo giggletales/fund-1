@@ -27,6 +27,7 @@
 */
 
 -- Main Equities Challenges Table
+DROP TABLE IF EXISTS equities_challenges CASCADE;
 CREATE TABLE IF NOT EXISTS equities_challenges (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -105,6 +106,7 @@ CREATE TABLE IF NOT EXISTS equities_challenges (
 );
 
 -- Equities Trades Table
+DROP TABLE IF EXISTS equities_trades CASCADE;
 CREATE TABLE IF NOT EXISTS equities_trades (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID REFERENCES equities_challenges(id) ON DELETE CASCADE NOT NULL,
@@ -162,6 +164,7 @@ CREATE TABLE IF NOT EXISTS equities_trades (
 );
 
 -- Sector Exposure Tracking
+DROP TABLE IF EXISTS sector_exposure CASCADE;
 CREATE TABLE IF NOT EXISTS sector_exposure (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID REFERENCES equities_challenges(id) ON DELETE CASCADE NOT NULL,
@@ -191,6 +194,7 @@ CREATE TABLE IF NOT EXISTS sector_exposure (
 );
 
 -- Pattern Day Trading Tracker
+DROP TABLE IF EXISTS pdt_tracker CASCADE;
 CREATE TABLE IF NOT EXISTS pdt_tracker (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID REFERENCES equities_challenges(id) ON DELETE CASCADE NOT NULL,
@@ -216,6 +220,7 @@ CREATE TABLE IF NOT EXISTS pdt_tracker (
 );
 
 -- Consistency Metrics Detail
+DROP TABLE IF EXISTS equities_consistency_metrics CASCADE;
 CREATE TABLE IF NOT EXISTS equities_consistency_metrics (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   challenge_id UUID REFERENCES equities_challenges(id) ON DELETE CASCADE NOT NULL,

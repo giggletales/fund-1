@@ -12,7 +12,18 @@
 */
 
 -- Add MT5 credentials columns
-ALTER TABLE user_challenges 
+CREATE TABLE IF NOT EXISTS user_challenges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  challenge_type text,
+  status text,
+  purchase_date timestamptz,
+  trading_account_id text,
+  current_phase integer,
+  account_size numeric,
+  amount_paid numeric
+);
+ALTER TABLE user_challenges
 ADD COLUMN IF NOT EXISTS trading_account_password text,
 ADD COLUMN IF NOT EXISTS trading_account_server text DEFAULT 'MetaQuotes-Demo',
 ADD COLUMN IF NOT EXISTS credentials_sent boolean DEFAULT false,

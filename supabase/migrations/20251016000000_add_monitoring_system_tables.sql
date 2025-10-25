@@ -33,9 +33,10 @@
     - Add policies for admin access where needed
 */
 
+DROP TABLE IF EXISTS account_metrics CASCADE;
 CREATE TABLE IF NOT EXISTS account_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  mt5_account_id uuid REFERENCES mt5_accounts(id) ON DELETE CASCADE NOT NULL,
+  mt5_account_id uuid REFERENCES mt5_accounts(account_id) ON DELETE CASCADE NOT NULL,
   balance decimal NOT NULL,
   equity decimal NOT NULL,
   profit decimal NOT NULL,
@@ -60,14 +61,15 @@ CREATE POLICY "Users can view their own account metrics"
   USING (
     EXISTS (
       SELECT 1 FROM mt5_accounts
-      WHERE mt5_accounts.id = account_metrics.mt5_account_id
+      WHERE mt5_accounts.account_id = account_metrics.mt5_account_id
       AND mt5_accounts.user_id = auth.uid()
     )
   );
 
+DROP TABLE IF EXISTS rule_violations CASCADE;
 CREATE TABLE IF NOT EXISTS rule_violations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  mt5_account_id uuid REFERENCES mt5_accounts(id) ON DELETE CASCADE NOT NULL,
+  mt5_account_id uuid REFERENCES mt5_accounts(account_id) ON DELETE CASCADE NOT NULL,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   rule_type text NOT NULL,
   current_value decimal NOT NULL,
@@ -89,6 +91,7 @@ CREATE POLICY "Users can view their own rule violations"
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS notifications CASCADE;
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -123,10 +126,11 @@ CREATE POLICY "Users can delete their own notifications"
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS certificates CASCADE;
 CREATE TABLE IF NOT EXISTS certificates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  mt5_account_id uuid REFERENCES mt5_accounts(id) ON DELETE CASCADE NOT NULL,
+  mt5_account_id uuid REFERENCES mt5_accounts(account_id) ON DELETE CASCADE NOT NULL,
   challenge_id uuid REFERENCES challenges(id) ON DELETE CASCADE NOT NULL,
   certificate_path text NOT NULL,
   issued_at timestamptz DEFAULT now() NOT NULL
@@ -142,6 +146,7 @@ CREATE POLICY "Users can view their own certificates"
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS affiliates CASCADE;
 CREATE TABLE IF NOT EXISTS affiliates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
@@ -170,6 +175,7 @@ CREATE POLICY "Users can update their own affiliate data"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP TABLE IF EXISTS referrals CASCADE;
 CREATE TABLE IF NOT EXISTS referrals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,
@@ -195,6 +201,7 @@ CREATE POLICY "Affiliates can view their own referrals"
     )
   );
 
+DROP TABLE IF EXISTS commissions CASCADE;
 CREATE TABLE IF NOT EXISTS commissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,
@@ -223,6 +230,7 @@ CREATE POLICY "Affiliates can view their own commissions"
     )
   );
 
+DROP TABLE IF EXISTS payouts CASCADE;
 CREATE TABLE IF NOT EXISTS payouts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,

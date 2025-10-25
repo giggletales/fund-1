@@ -23,17 +23,3 @@ BEGIN
     ALTER TABLE users DROP COLUMN password_hash;
   END IF;
 END $$;
-
--- Add policy for users to insert their own profile
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE tablename = 'users' AND policyname = 'Users can insert own profile'
-  ) THEN
-    CREATE POLICY "Users can insert own profile"
-      ON users FOR INSERT
-      TO authenticated
-      WITH CHECK (auth.uid() = id);
-  END IF;
-END $$;

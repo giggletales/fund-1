@@ -21,6 +21,7 @@
 */
 
 -- Create transactions table
+DROP TABLE IF EXISTS transactions CASCADE;
 CREATE TABLE IF NOT EXISTS transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -140,18 +141,21 @@ CREATE TABLE IF NOT EXISTS transactions (
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
 CREATE POLICY "Users can view own transactions"
   ON transactions
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
 CREATE POLICY "Users can insert own transactions"
   ON transactions
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all transactions" ON transactions;
 CREATE POLICY "Admins can view all transactions"
   ON transactions
   FOR SELECT
@@ -164,6 +168,7 @@ CREATE POLICY "Admins can view all transactions"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage transactions" ON transactions;
 CREATE POLICY "Admins can manage transactions"
   ON transactions
   FOR ALL
@@ -185,6 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_transaction_id ON transactions(trans
 CREATE INDEX IF NOT EXISTS idx_transactions_invoice ON transactions(invoice_number);
 
 -- Function to auto-generate transaction ID
+DROP FUNCTION IF EXISTS generate_transaction_id();
 CREATE OR REPLACE FUNCTION generate_transaction_id()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -201,20 +207,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create sequence for invoices
+DROP SEQUENCE IF EXISTS invoice_sequence;
 CREATE SEQUENCE IF NOT EXISTS invoice_sequence START 1;
 
+DROP TRIGGER IF EXISTS set_transaction_id ON transactions;
 CREATE TRIGGER set_transaction_id
   BEFORE INSERT ON transactions
   FOR EACH ROW
   EXECUTE FUNCTION generate_transaction_id();
 
 -- Update trigger
+DROP TRIGGER IF EXISTS update_transactions_timestamp ON transactions;
 CREATE TRIGGER update_transactions_timestamp
   BEFORE UPDATE ON transactions
   FOR EACH ROW
   EXECUTE FUNCTION update_contract_timestamp();
 
 -- Function to get user billing summary
+DROP FUNCTION IF EXISTS get_billing_summary(uuid);
 CREATE OR REPLACE FUNCTION get_billing_summary(p_user_id uuid)
 RETURNS TABLE (
   total_spent numeric,

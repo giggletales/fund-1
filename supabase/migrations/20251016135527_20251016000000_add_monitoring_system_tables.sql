@@ -16,6 +16,7 @@
     - Add policies for authenticated users to access their own data
 */
 
+DROP TABLE IF EXISTS account_metrics CASCADE;
 CREATE TABLE IF NOT EXISTS account_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   mt5_account_id uuid REFERENCES mt5_accounts(account_id) ON DELETE CASCADE NOT NULL,
@@ -37,6 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_account_metrics_timestamp ON account_metrics(time
 
 ALTER TABLE account_metrics ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own account metrics" ON account_metrics;
 CREATE POLICY "Users can view their own account metrics"
   ON account_metrics FOR SELECT
   TO authenticated
@@ -48,6 +50,7 @@ CREATE POLICY "Users can view their own account metrics"
     )
   );
 
+DROP TABLE IF EXISTS rule_violations CASCADE;
 CREATE TABLE IF NOT EXISTS rule_violations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   mt5_account_id uuid REFERENCES mt5_accounts(account_id) ON DELETE CASCADE NOT NULL,
@@ -67,11 +70,13 @@ CREATE INDEX IF NOT EXISTS idx_rule_violations_severity ON rule_violations(sever
 
 ALTER TABLE rule_violations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own rule violations" ON rule_violations;
 CREATE POLICY "Users can view their own rule violations"
   ON rule_violations FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS notifications CASCADE;
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -90,22 +95,26 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
 CREATE POLICY "Users can view their own notifications"
   ON notifications FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 CREATE POLICY "Users can update their own notifications"
   ON notifications FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
 CREATE POLICY "Users can delete their own notifications"
   ON notifications FOR DELETE
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS certificates CASCADE;
 CREATE TABLE IF NOT EXISTS certificates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -120,11 +129,13 @@ CREATE INDEX IF NOT EXISTS idx_certificates_account ON certificates(mt5_account_
 
 ALTER TABLE certificates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own certificates" ON certificates;
 CREATE POLICY "Users can view their own certificates"
   ON certificates FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP TABLE IF EXISTS affiliates CASCADE;
 CREATE TABLE IF NOT EXISTS affiliates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
@@ -142,17 +153,20 @@ CREATE INDEX IF NOT EXISTS idx_affiliates_user ON affiliates(user_id);
 
 ALTER TABLE affiliates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own affiliate data" ON affiliates;
 CREATE POLICY "Users can view their own affiliate data"
   ON affiliates FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own affiliate data" ON affiliates;
 CREATE POLICY "Users can update their own affiliate data"
   ON affiliates FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP TABLE IF EXISTS referrals CASCADE;
 CREATE TABLE IF NOT EXISTS referrals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,
@@ -167,6 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referred_user ON referrals(referred_use
 
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Affiliates can view their own referrals" ON referrals;
 CREATE POLICY "Affiliates can view their own referrals"
   ON referrals FOR SELECT
   TO authenticated
@@ -178,6 +193,7 @@ CREATE POLICY "Affiliates can view their own referrals"
     )
   );
 
+DROP TABLE IF EXISTS commissions CASCADE;
 CREATE TABLE IF NOT EXISTS commissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,
@@ -195,6 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_commissions_status ON commissions(status);
 
 ALTER TABLE commissions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Affiliates can view their own commissions" ON commissions;
 CREATE POLICY "Affiliates can view their own commissions"
   ON commissions FOR SELECT
   TO authenticated
@@ -206,6 +223,7 @@ CREATE POLICY "Affiliates can view their own commissions"
     )
   );
 
+DROP TABLE IF EXISTS payouts_affiliate CASCADE;
 CREATE TABLE IF NOT EXISTS payouts_affiliate (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid REFERENCES affiliates(id) ON DELETE CASCADE NOT NULL,
@@ -223,6 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_payouts_affiliate_status ON payouts_affiliate(sta
 
 ALTER TABLE payouts_affiliate ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Affiliates can view their own payouts" ON payouts_affiliate;
 CREATE POLICY "Affiliates can view their own payouts"
   ON payouts_affiliate FOR SELECT
   TO authenticated
@@ -234,6 +253,7 @@ CREATE POLICY "Affiliates can view their own payouts"
     )
   );
 
+DROP POLICY IF EXISTS "Affiliates can request payouts" ON payouts_affiliate;
 CREATE POLICY "Affiliates can request payouts"
   ON payouts_affiliate FOR INSERT
   TO authenticated

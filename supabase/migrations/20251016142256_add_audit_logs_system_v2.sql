@@ -33,6 +33,7 @@
 */
 
 -- Create audit_logs table
+DROP TABLE IF EXISTS audit_logs CASCADE;
 CREATE TABLE IF NOT EXISTS audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id),
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- Create rate_limit_violations table
+DROP TABLE IF EXISTS rate_limit_violations CASCADE;
 CREATE TABLE IF NOT EXISTS rate_limit_violations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ip_address text NOT NULL,
@@ -67,6 +69,7 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_limit_violations ENABLE ROW LEVEL SECURITY;
 
 -- Audit logs policies
+DROP POLICY IF EXISTS "Users can view their own audit logs" ON audit_logs;
 CREATE POLICY "Users can view their own audit logs"
   ON audit_logs FOR SELECT
   TO authenticated

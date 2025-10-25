@@ -15,8 +15,7 @@
   - Full audit trail
 */
 
--- Step 1: Add role to users table
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
+-- Step 1: (Removed) Add role to users table - users is a view, roles are in metadata.
 
 -- Step 2: Add contract fields to mt5_accounts
 ALTER TABLE mt5_accounts ADD COLUMN IF NOT EXISTS contract_accepted BOOLEAN DEFAULT false;
@@ -37,16 +36,16 @@ CREATE TABLE IF NOT EXISTS mt5_account_status_history (
 
 ALTER TABLE mt5_account_status_history ENABLE ROW LEVEL SECURITY;
 
--- Step 4: RLS policies (now role column exists)
+-- Step 4: RLS policies (checking role from auth.users metadata)
 DROP POLICY IF EXISTS "Admins can view all status history" ON mt5_account_status_history;
 CREATE POLICY "Admins can view all status history"
   ON mt5_account_status_history FOR SELECT
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
+      SELECT 1 FROM auth.users 
+      WHERE id = auth.uid() 
+      AND raw_user_meta_data->>'role' = 'admin'
     )
   );
 
@@ -117,8 +116,8 @@ DECLARE
   v_credentials_locked BOOLEAN;
   v_old_status VARCHAR(50);
 BEGIN
-  SELECT COALESCE((role = 'admin'), false) INTO v_is_admin
-  FROM users WHERE id = auth.uid();
+  SELECT COALESCE((raw_user_meta_data->>'role') = 'admin', false) INTO v_is_admin
+  FROM auth.users WHERE id = auth.uid();
 
   IF NOT v_is_admin THEN
     RETURN jsonb_build_object('success', false, 'error', 'Admin only');

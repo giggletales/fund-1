@@ -124,12 +124,14 @@ ALTER TABLE mt5_equity_snapshots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_queue ENABLE ROW LEVEL SECURITY;
 
 -- Policies for mt5_accounts
+DROP POLICY IF EXISTS "Users can view own MT5 accounts" ON mt5_accounts;
 CREATE POLICY "Users can view own MT5 accounts"
   ON mt5_accounts FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
 -- Policies for mt5_trades
+DROP POLICY IF EXISTS "Users can view own trades" ON mt5_trades;
 CREATE POLICY "Users can view own trades"
   ON mt5_trades FOR SELECT
   TO authenticated
@@ -140,6 +142,7 @@ CREATE POLICY "Users can view own trades"
   );
 
 -- Policies for mt5_equity_snapshots
+DROP POLICY IF EXISTS "Users can view own equity snapshots" ON mt5_equity_snapshots;
 CREATE POLICY "Users can view own equity snapshots"
   ON mt5_equity_snapshots FOR SELECT
   TO authenticated
@@ -150,6 +153,7 @@ CREATE POLICY "Users can view own equity snapshots"
   );
 
 -- Policies for email_queue
+DROP POLICY IF EXISTS "Users can view own emails" ON email_queue;
 CREATE POLICY "Users can view own emails"
   ON email_queue FOR SELECT
   TO authenticated

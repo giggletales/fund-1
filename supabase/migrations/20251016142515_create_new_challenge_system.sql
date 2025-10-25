@@ -208,38 +208,45 @@ ALTER TABLE validation_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE retry_discounts ENABLE ROW LEVEL SECURITY;
 
 -- Public access to challenge types and pricing
+DROP POLICY IF EXISTS "Anyone can view challenge types" ON challenge_types;
 CREATE POLICY "Anyone can view challenge types"
   ON challenge_types FOR SELECT
   TO public
   USING (is_active = true);
 
+DROP POLICY IF EXISTS "Anyone can view pricing" ON challenge_pricing;
 CREATE POLICY "Anyone can view pricing"
   ON challenge_pricing FOR SELECT
   TO public
   USING (true);
 
+DROP POLICY IF EXISTS "Anyone can view rules" ON challenge_rules;
 CREATE POLICY "Anyone can view rules"
   ON challenge_rules FOR SELECT
   TO public
   USING (true);
 
 -- User-specific policies
+DROP POLICY IF EXISTS "Users can view their own challenges" ON user_challenges;
 CREATE POLICY "Users can view their own challenges"
   ON user_challenges FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create challenges" ON user_challenges;
 CREATE POLICY "Users can create challenges"
   ON user_challenges FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their challenges" ON user_challenges;
 CREATE POLICY "Users can update their challenges"
   ON user_challenges FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their trading activity" ON trading_activity;
 CREATE POLICY "Users can view their trading activity"
   ON trading_activity FOR SELECT
   TO authenticated
@@ -251,6 +258,7 @@ CREATE POLICY "Users can view their trading activity"
     )
   );
 
+DROP POLICY IF EXISTS "Users can view their daily stats" ON daily_stats;
 CREATE POLICY "Users can view their daily stats"
   ON daily_stats FOR SELECT
   TO authenticated
@@ -262,6 +270,7 @@ CREATE POLICY "Users can view their daily stats"
     )
   );
 
+DROP POLICY IF EXISTS "Users can view their validation results" ON validation_results;
 CREATE POLICY "Users can view their validation results"
   ON validation_results FOR SELECT
   TO authenticated
@@ -273,6 +282,7 @@ CREATE POLICY "Users can view their validation results"
     )
   );
 
+DROP POLICY IF EXISTS "Users can view their retry discounts" ON retry_discounts;
 CREATE POLICY "Users can view their retry discounts"
   ON retry_discounts FOR SELECT
   TO authenticated
