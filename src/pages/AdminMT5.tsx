@@ -47,6 +47,7 @@ export default function AdminMT5() {
         setLoading(false);
         return;
       }
+      // FIX: Reverted to RPC call which is the intended way for admins to fetch users.
       const { data: rpcData, error: newProfilesError } = await supabase.rpc('get_users_for_admin');
 
       if (newProfilesError) {
@@ -59,12 +60,14 @@ export default function AdminMT5() {
         const lastName = lastNameParts.join(' ');
         return {
           user_id: user.id,
+          id: user.id,
           email: user.email,
           first_name: firstName || user.email.split('@')[0],
           last_name: lastName || '',
-          friendly_id: null, // Not available from get_users_for_admin
+          full_name: user.full_name || '',
+          friendly_id: user.friendly_id,
+          created_at: user.created_at,
           source: 'NEW DB',
-          ...user,
         };
       });
 
@@ -126,7 +129,8 @@ export default function AdminMT5() {
           first_name: p.first_name,
           last_name: p.last_name,
           friendly_id: p.friendly_id,
-          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
+          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+          source: p.source,
         }
       ]));
 
@@ -240,7 +244,15 @@ export default function AdminMT5() {
       setAccounts(formattedAccounts);
 
       // Create users list from all unique user_ids in profiles
-      const usersData = Array.from(profilesMap.values());
+      const usersData = allProfilesData.map(p => ({
+        id: p.user_id,
+        user_id: p.user_id,
+        email: p.email,
+        full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        friendly_id: p.friendly_id,
+        source: p.source,
+        created_at: p.created_at,
+      }));
       setUsers(usersData);
       
       setLoading(false);
@@ -379,8 +391,8 @@ function TabButton({ active, onClick, icon, label }: any) {
   );
 }
 
-function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, setShowCreateModal, loadData }: any) {
-  const filteredAccounts = accounts.filter((acc: any) =>
+function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, setShowCreateModal, loadData }: { accounts: MT5Account[], pendingChallenges: any[], searchTerm: string, setSearchTerm: (term: string) => void, setShowCreateModal: (show: boolean) => void, loadData: () => void }) {
+  const filteredAccounts = accounts.filter((acc: MT5Account) =>
     acc.mt5_login.toLowerCase().includes(searchTerm.toLowerCase()) ||
     acc.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     acc.account_type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -524,7 +536,7 @@ function AccountsTab({ accounts, pendingChallenges, searchTerm, setSearchTerm, s
   );
 }
 
-function StatCard({ label, value, icon, color }: any) {
+function StatCard({ label, value, icon, color }: { label: string, value: string | number, icon: string, color: string }) {
   const colors = {
     blue: 'bg-electric-blue/20 border-electric-blue/30',
     green: 'bg-neon-green/20 border-neon-green/30',
@@ -696,7 +708,7 @@ function AccountCard({ account, onUpdate }: { account: MT5Account; onUpdate: () 
   );
 }
 
-function CredentialField({ label, value, onCopy, copied, showPassword, onTogglePassword }: any) {
+function CredentialField({ label, value, onCopy, copied, showPassword, onTogglePassword }: { label: string, value: string, onCopy?: () => void, copied?: boolean, showPassword?: boolean, onTogglePassword?: () => void }) {
   return (
     <div>
       <label className="block text-xs text-gray-400 mb-1">{label}</label>
@@ -725,7 +737,7 @@ function CredentialField({ label, value, onCopy, copied, showPassword, onToggleP
   );
 }
 
-function CreateAccountModal({ users, onClose, onSuccess }: any) {
+function CreateAccountModal({ users, onClose, onSuccess }: { users: any[], onClose: () => void, onSuccess: () => void }) {
   const [pendingChallenges, setPendingChallenges] = useState<any[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -864,7 +876,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
     setSelectedChallenge(challenge);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!selectedChallenge) {
@@ -1103,7 +1115,7 @@ function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { 
     if (searchTerm.length === 0) {
       return users;
     }
-    return users.filter(u => 
+    return users.filter((u: any) =>
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.friendly_id?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1176,7 +1188,7 @@ function SearchableUserDropdown({ onSelect, selectedUser, users: propUsers }: { 
   );
 }
 
-function CertificateCard({ icon, title, description, userId }: any) {
+function CertificateCard({ icon, title, description, userId }: { icon: string, title: string, description: string, userId: string }) {
   const [sending, setSending] = useState(false);
 
   const sendCertificate = async () => {
@@ -1354,7 +1366,7 @@ function CertificatesTab({ users }: { users: any[] }) {
 
   async function handleSendCertificate(pendingItem: any) {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
       let endpoint = `${API_URL}/certificates/welcome`;
       let body: any = { user_id: pendingItem.user_id };
 
@@ -1941,15 +1953,25 @@ function AffiliatesManagementTab() {
       if (!supabase) {
         throw new Error('Supabase client is not initialized');
       }
+      // FIX: Fetch payouts and affiliates separately and join them manually
       const { data: payoutsData, error: payoutsError } = await supabase
         .from('payouts')
-        .select('*, affiliates(*)')
+        .select('*')
         .order('requested_at', { ascending: false });
 
       if (payoutsError) throw payoutsError;
 
+      // Manually join affiliate data into payouts
+      const enrichedPayouts = payoutsData?.map(payout => {
+        const affiliate = affiliatesData?.find(aff => aff.id === payout.affiliate_id);
+        return {
+          ...payout,
+          affiliates: affiliate || null, // Nest affiliate data like the original query
+        };
+      });
+
       setAffiliates(affiliatesData || []);
-      setPayouts(payoutsData || []);
+      setPayouts(enrichedPayouts || []);
     } catch (error) {
       console.error('Error loading affiliate data:', error);
     } finally {
