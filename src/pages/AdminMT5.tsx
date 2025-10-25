@@ -47,13 +47,26 @@ export default function AdminMT5() {
         setLoading(false);
         return;
       }
-      const { data: newProfilesData, error: newProfilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id');
-      
+      const { data: rpcData, error: newProfilesError } = await supabase.rpc('get_users_for_admin');
+
       if (newProfilesError) {
-        console.error('❌ Error fetching NEW DB user profiles:', newProfilesError);
+        console.error('❌ Error fetching NEW DB user profiles via RPC:', newProfilesError);
       }
+
+      // Adapt the RPC data to the structure the component expects
+      const newProfilesData = rpcData?.map((user: any) => {
+        const [firstName, ...lastNameParts] = (user.full_name || '').split(' ');
+        const lastName = lastNameParts.join(' ');
+        return {
+          user_id: user.id,
+          email: user.email,
+          first_name: firstName || user.email.split('@')[0],
+          last_name: lastName || '',
+          friendly_id: null, // Not available from get_users_for_admin
+          source: 'NEW DB',
+          ...user,
+        };
+      });
 
       const { data: newChallengesData, error: newChallengesError } = await supabase
         .from('user_challenges')
@@ -79,7 +92,7 @@ export default function AdminMT5() {
           if (oldProfilesError) {
             console.warn('⚠️ Error fetching OLD DB user profiles:', oldProfilesError.message);
           } else {
-            oldProfilesData = profiles;
+            oldProfilesData = profiles.map((p: any) => ({ ...p, source: 'OLD DB' }));
           }
 
           const { data: challenges, error: oldChallengesError } = await oldSupabase
@@ -750,13 +763,24 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
       if (!supabase) {
         throw new Error('Supabase client is not initialized');
       }
-      const { data: newProfilesData, error: newProfilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id');
+      const { data: rpcData, error: newProfilesError } = await supabase.rpc('get_users_for_admin');
 
       if (newProfilesError) {
-        console.warn('Could not load NEW DB user profiles:', newProfilesError);
+        console.warn('Could not load NEW DB user profiles via RPC:', newProfilesError);
       }
+      
+      const newProfilesData = rpcData?.map((user: any) => {
+        const [firstName, ...lastNameParts] = (user.full_name || '').split(' ');
+        const lastName = lastNameParts.join(' ');
+        return {
+          user_id: user.id,
+          email: user.email,
+          first_name: firstName || user.email.split('@')[0],
+          last_name: lastName || '',
+          friendly_id: null,
+          ...user,
+        };
+      });
 
       // OLD DATABASE
       let oldChallenges = null;
@@ -797,7 +821,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
         p.user_id,
         {
           id: p.user_id,
-          email: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'Unknown',
+          email: p.email || `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.friendly_id || 'Unknown',
           full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim()
         }
       ]));
@@ -1244,7 +1268,7 @@ function CertificatesTab({ users }: { users: any[] }) {
           pending.push({
             user_id: user.id,
             user_email: user.email,
-            user_name: user.user_metadata?.full_name || user.email,
+            user_name: user.full_name || user.email,
             type: 'welcome',
             title: 'Welcome Certificate',
             reason: 'New user - needs welcome certificate',
@@ -1276,7 +1300,7 @@ function CertificatesTab({ users }: { users: any[] }) {
                 pending.push({
                   user_id: user.id,
                   user_email: user.email,
-                  user_name: user.user_metadata?.full_name || user.email,
+                  user_name: user.full_name || user.email,
                   type: 'challenge_started',
                   title: 'Challenge Started',
                   reason: `Started ${account.account_type} - $${account.initial_balance}`,
@@ -1301,7 +1325,7 @@ function CertificatesTab({ users }: { users: any[] }) {
                 pending.push({
                   user_id: user.id,
                   user_email: user.email,
-                  user_name: user.user_metadata?.full_name || user.email,
+                  user_name: user.full_name || user.email,
                   type: 'challenge_passed',
                   title: 'Challenge Passed',
                   reason: `Passed ${account.account_type} - $${account.initial_balance} 🎉`,
@@ -1484,7 +1508,7 @@ function CertificatesTab({ users }: { users: any[] }) {
               </div>
               <div>
                 <div className="text-white/60 text-sm">Registered</div>
-                <div className="font-bold">{new Date(selectedUser.created_at).toLocaleDateString()}</div>
+                <div className="font-bold">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'N/A'}</div>
               </div>
             </div>
           </div>
