@@ -22,18 +22,19 @@ export const supabase = supabaseUrl && supabaseAnonKey
   : null;
 
 // OLD DATABASE (Legacy - for migration)
-// const oldSupabaseUrl = 'https://mvgcwqmsawopumuksqmz.supabase.co';
-// const oldSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Z2N3cW1zYXdvcHVtdWtzcW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg4OTk0NjAsImV4cCI6MjA0NDQ3NTQ2MH0.qnT8kGxI0fkPBPdqIRkNXlkqTQfcVKwLLtHhPRa0Uqc';
+const oldSupabaseUrl = import.meta.env.VITE_OLD_SUPABASE_URL;
+const oldSupabaseKey = import.meta.env.VITE_OLD_SUPABASE_ANON_KEY;
 
-export const oldSupabase = null;
-// export const oldSupabase = createClient(oldSupabaseUrl, oldSupabaseKey, {
-//   auth: {
-//     persistSession: false,
-//     autoRefreshToken: false,
-//     detectSessionInUrl: false,
-//     storageKey: 'supabase-old-db'
-//   }
-// });
+export const oldSupabase = oldSupabaseUrl && oldSupabaseKey
+  ? createClient(oldSupabaseUrl, oldSupabaseKey, {
+      auth: {
+        persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storageKey: 'supabase-old-db'
+  }
+})
+: null;
 
 export const db = {
   query: async (text: string, params?: any[]) => {

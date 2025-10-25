@@ -49,7 +49,7 @@ export default function AdminMT5() {
       }
       const { data: newProfilesData, error: newProfilesError } = await supabase
         .from('user_profiles')
-        .select('user_id, first_name, last_name, friendly_id, email');
+        .select('user_id, first_name, last_name, friendly_id');
       
       if (newProfilesError) {
         console.error('❌ Error fetching NEW DB user profiles:', newProfilesError);
