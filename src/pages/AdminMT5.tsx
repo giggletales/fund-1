@@ -48,7 +48,7 @@ export default function AdminMT5() {
         return;
       }
       const { data: newProfilesData, error: newProfilesError } = await supabase
-        .from('user_profiles')
+        .from('user_profile')
         .select('user_id, first_name, last_name, friendly_id');
       
       if (newProfilesError) {
@@ -73,7 +73,7 @@ export default function AdminMT5() {
       try {
         if (oldSupabase) {
           const { data: profiles, error: oldProfilesError } = await oldSupabase
-            .from('user_profiles')
+            .from('user_profile')
             .select('user_id, first_name, last_name, friendly_id, email');
           
           if (oldProfilesError) {
@@ -751,7 +751,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
         throw new Error('Supabase client is not initialized');
       }
       const { data: newProfilesData, error: newProfilesError } = await supabase
-        .from('user_profiles')
+        .from('user_profile')
         .select('user_id, first_name, last_name, friendly_id');
 
       if (newProfilesError) {
@@ -778,7 +778,7 @@ function CreateAccountModal({ users, onClose, onSuccess }: any) {
           }
 
           const { data: profiles, error: oldProfilesError } = await oldSupabase
-            .from('user_profiles')
+            .from('user_profile')
             .select('user_id, first_name, last_name, friendly_id');
 
           if (oldProfilesError) {

@@ -71,8 +71,8 @@ CREATE INDEX IF NOT EXISTS idx_user_challenges_payment_id ON user_challenges(pay
 CREATE INDEX IF NOT EXISTS idx_user_challenges_status ON user_challenges(status);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_friendly_id ON user_profiles(friendly_id);
+CREATE INDEX IF NOT EXISTS idx_user_profile_user_id ON user_profile(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profile_friendly_id ON user_profile(friendly_id);
 CREATE INDEX IF NOT EXISTS idx_challenge_types_challenge_code ON challenge_types(challenge_code);
 CREATE INDEX IF NOT EXISTS idx_challenge_pricing_challenge_type_id ON challenge_pricing(challenge_type_id);
 
@@ -82,7 +82,7 @@ DECLARE
   table_name text;
 BEGIN
   FOR table_name IN 
-    SELECT unnest(ARRAY['user_profiles', 'user_challenges', 'payments', 'downloads', 'coupons', 'challenge_types', 'challenge_pricing'])
+    SELECT unnest(ARRAY['user_profile', 'user_challenges', 'payments', 'downloads', 'coupons', 'challenge_types', 'challenge_pricing'])
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
   END LOOP;

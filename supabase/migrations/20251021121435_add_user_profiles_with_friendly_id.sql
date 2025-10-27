@@ -23,8 +23,8 @@
 -- Create sequence for user numbers starting at 10000
 CREATE SEQUENCE IF NOT EXISTS user_number_seq START WITH 10000 INCREMENT BY 1;
 
--- Create user_profiles table
-CREATE TABLE IF NOT EXISTS user_profiles (
+-- Create user_profile table
+CREATE TABLE IF NOT EXISTS user_profile (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   user_number integer UNIQUE NOT NULL DEFAULT nextval('user_number_seq'),
@@ -36,25 +36,25 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 );
 
 -- Enable RLS
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profile ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Users can read own profile"
-  ON user_profiles FOR SELECT
+  ON user_profile FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own profile"
-  ON user_profiles FOR UPDATE
+  ON user_profile FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own profile"
-  ON user_profiles FOR INSERT
+  ON user_profile FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
 -- Create index
-CREATE INDEX IF NOT EXISTS user_profiles_user_id_idx ON user_profiles(user_id);
-CREATE INDEX IF NOT EXISTS user_profiles_user_number_idx ON user_profiles(user_number);
+CREATE INDEX IF NOT EXISTS user_profile_user_id_idx ON user_profile(user_id);
+CREATE INDEX IF NOT EXISTS user_profile_user_number_idx ON user_profile(user_number);

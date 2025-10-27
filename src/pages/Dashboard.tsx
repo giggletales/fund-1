@@ -195,9 +195,9 @@ function OverviewSection({ user }: { user: any }) {
 
   async function fetchData() {
     try {
-      // Fetch user's friendly_id from user_profiles
+      // Fetch user's friendly_id from user_profile
       const { data: userProfile } = await supabase
-        .from('user_profiles')
+        .from('user_profile')
         .select('friendly_id')
         .eq('user_id', user.id)
         .single();

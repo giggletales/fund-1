@@ -41,7 +41,7 @@ export async function signUp(email: string, password: string, firstName: string,
   let friendlyId = null;
   try {
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
+      .from('user_profile')
       .insert({
         user_id: data.user.id,
         first_name: firstName,
@@ -66,7 +66,7 @@ export async function signUp(email: string, password: string, firstName: string,
   if (!friendlyId) {
     try {
       const { data: existingProfile } = await supabase
-        .from('user_profiles')
+        .from('user_profile')
         .select('friendly_id')
         .eq('user_id', data.user.id)
         .single();

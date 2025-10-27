@@ -3,7 +3,7 @@
 
   1. Core Tables
     - users (via auth.users)
-    - user_profiles - Extended user information with friendly IDs
+    - user_profile - Extended user information with friendly IDs
     - challenges - Main challenge records
     - user_challenges - User challenge purchases and state
     - challenge_types - Challenge type definitions
@@ -87,7 +87,7 @@
 -- ============================================================
 
 -- User Profiles (extends auth.users)
-CREATE TABLE IF NOT EXISTS user_profiles (
+CREATE TABLE IF NOT EXISTS user_profile (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
   friendly_id TEXT UNIQUE,
@@ -102,24 +102,24 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_friendly_id ON user_profiles(friendly_id);
+CREATE INDEX IF NOT EXISTS idx_user_profile_user_id ON user_profile(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profile_friendly_id ON user_profile(friendly_id);
 
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profile ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own profile"
-  ON user_profiles FOR SELECT
+  ON user_profile FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own profile"
-  ON user_profiles FOR UPDATE
+  ON user_profile FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own profile"
-  ON user_profiles FOR INSERT
+  ON user_profile FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
@@ -144,7 +144,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.friendly_id IS NULL THEN
     NEW.friendly_id := generate_friendly_id();
-    WHILE EXISTS (SELECT 1 FROM user_profiles WHERE friendly_id = NEW.friendly_id) LOOP
+    WHILE EXISTS (SELECT 1 FROM user_profile WHERE friendly_id = NEW.friendly_id) LOOP
       NEW.friendly_id := generate_friendly_id();
     END LOOP;
   END IF;
@@ -152,9 +152,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS set_friendly_id_trigger ON user_profiles;
+DROP TRIGGER IF EXISTS set_friendly_id_trigger ON user_profile;
 CREATE TRIGGER set_friendly_id_trigger
-  BEFORE INSERT ON user_profiles
+  BEFORE INSERT ON user_profile
   FOR EACH ROW
   EXECUTE FUNCTION set_friendly_id();
 

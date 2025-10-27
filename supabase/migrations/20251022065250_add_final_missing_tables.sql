@@ -80,7 +80,7 @@ BEGIN
   END IF;
 END $$;
 
--- Helper view for users (combines auth.users with user_profiles)
+-- Helper view for users (combines auth.users with user_profile)
 CREATE OR REPLACE VIEW users AS
 SELECT 
   au.id,
@@ -97,7 +97,7 @@ SELECT
   up.referred_by,
   up.kyc_status
 FROM auth.users au
-LEFT JOIN user_profiles up ON up.user_id = au.id;
+LEFT JOIN user_profile up ON up.user_id = au.id;
 
 -- Grant access to the view
 GRANT SELECT ON users TO authenticated;
